@@ -36,3 +36,14 @@ docker-compose up --build
 # Backend API: http://localhost:3001/api
 # phpMyAdmin:  http://localhost:8080
 ```
+
+## 👥 Integrantes del Equipo
+
+- **José Hernández**
+- **Josue Cedeno**
+- **Gianfranco Marcano**
+- **Andres Solano**
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la [Licencia MIT](LICENSE).
