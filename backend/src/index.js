@@ -9,7 +9,7 @@ const morgan = require('morgan');
 const { testConnection } = require('./db/connection');
 
 // ── Routes ───
-const targetsRouter = require('./routes/targets');
+const targetsRouter = require('./routes/target');
 const statusRouter = require('./routes/status');
 const eventsRouter = require('./routes/events');
 
