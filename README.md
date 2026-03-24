@@ -42,7 +42,6 @@ docker-compose up --build
 - **José Hernández**
 - **Josue Cedeno**
 - **Gianfranco Marcano**
-- **Andres Solano**
 
 ## 📄 Licencia
 
