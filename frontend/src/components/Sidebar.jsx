@@ -1,11 +1,12 @@
 import React from 'react';
-import { LayoutDashboard, Server, BellRing, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Server, BellRing, Settings, CircleHelp, LogOut, X } from 'lucide-react';
 
 export const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'servicios', label: 'Servicios', icon: Server },
   { id: 'alertas', label: 'Alertas', icon: BellRing },
   { id: 'configuracion', label: 'Configuración', icon: Settings },
+  { id: 'ayuda', label: 'Ayuda', icon: CircleHelp },
 ];
 
 export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }) => {

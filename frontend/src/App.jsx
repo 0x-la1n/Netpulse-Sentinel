@@ -6,6 +6,7 @@ import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { AddTargetModal } from './components/AddTargetModal';
+import { HelpManual } from './components/HelpManual';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -69,6 +70,8 @@ export default function App() {
               handleDeleteService={handleDeleteService}
               setShowAddModal={setShowAddModal}
             />
+          ) : activeTab === 'ayuda' ? (
+            <HelpManual />
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-2xl bg-slate-900/30 max-w-lg w-full m-auto">
               <div className="w-16 h-16 mb-4 rounded-xl bg-slate-800/80 flex items-center justify-center flex-shrink-0 border border-slate-700">
