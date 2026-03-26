@@ -1,0 +1,181 @@
+import React from 'react';
+import { 
+  Server, Activity, ArrowUpRight, ArrowDownRight, 
+  LayoutDashboard, CheckCircle2, XCircle, Trash2, Clock 
+} from 'lucide-react';
+import { Sparkline } from './Sparkline';
+
+export const Dashboard = ({ services, events, handleDeleteService, setShowAddModal }) => {
+  // Cálculos para KPIs
+  const totalServices = services.length;
+  const upNodes = services.filter(s => s.status === 'UP').length;
+  const downNodes = services.filter(s => s.status === 'DOWN').length;
+  const globalUptime = totalServices > 0 
+    ? (services.reduce((acc, curr) => acc + curr.uptime, 0) / totalServices).toFixed(2) 
+    : 0;
+
+  return (
+    <div className="flex flex-col xl:flex-row gap-6 pb-6 w-full">
+      {/* Contenido Principal (KPIs & Grid) */}
+      <div className="flex-1 flex flex-col gap-6 min-w-0">
+        {/* FAQs/KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-center relative overflow-hidden">
+            <div className="text-sm font-medium text-slate-400 mb-1">Total Servicios</div>
+            <div className="text-3xl font-bold text-slate-100">{totalServices}</div>
+            <Server className="absolute -right-2 -bottom-2 w-16 h-16 text-slate-800/30 pointer-events-none" />
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-center relative overflow-hidden">
+            <div className="text-sm font-medium text-slate-400 mb-1">Nodos UP</div>
+            <div className="text-3xl font-bold text-emerald-400 flex items-center gap-2">
+              {upNodes}
+              <ArrowUpRight className="w-5 h-5 text-emerald-500/50" />
+            </div>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-center relative overflow-hidden">
+            <div className="text-sm font-medium text-slate-400 mb-1">Nodos DOWN</div>
+            <div className="text-3xl font-bold text-rose-400 flex items-center gap-2">
+              {downNodes}
+              {downNodes > 0 && <ArrowDownRight className="w-5 h-5 text-rose-500/50" />}
+            </div>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-center relative overflow-hidden">
+            <div className="text-sm font-medium text-slate-400 mb-1">Uptime Global</div>
+            <div className="text-3xl font-bold text-slate-100">{globalUptime}%</div>
+            <Activity className="absolute -right-2 -bottom-2 w-16 h-16 text-slate-800/30 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Infrastructure Grid */}
+        <div>
+          <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">
+            <LayoutDashboard className="w-5 h-5 text-slate-400" />
+            Grid de Nodos a Monitorizar
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {services.map(service => {
+              const isUp = service.status === 'UP';
+              const currentLat = service.latencies[service.latencies.length - 1] || 0;
+              
+              return (
+                <div key={service.id} className={`bg-slate-900 border rounded-xl p-4 flex flex-col relative overflow-hidden transition-all duration-300 ${
+                  isUp ? 'border-slate-800 hover:border-slate-700' : 'border-rose-900/50 bg-rose-950/20'
+                }`}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="min-w-0 pr-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-slate-100 truncate max-w-[150px]">{service.name}</h4>
+                        <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
+                          isUp 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse'
+                        }`}>
+                          {isUp ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          {service.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5 w-full">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700">{service.type}</span>
+                        <span className="truncate">{service.target}</span>
+                      </p>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleDeleteService(service.id)}
+                      className="text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 p-1.5 rounded-md transition-colors flex-shrink-0"
+                      title="Eliminar servicio"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Sparkline & Stats */}
+                  <div className="mt-auto pt-3 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                      <span className="flex items-center gap-1 font-mono">
+                        <Clock className="w-3.5 h-3.5" /> 
+                        {isUp ? `${currentLat} ms` : 'Timeout'}
+                      </span>
+                      <span className="font-medium">{service.uptime.toFixed(2)}% SLA</span>
+                    </div>
+                    <div className="px-1 relative h-10 w-full">
+                      <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none py-0.5">
+                        <div className="border-t border-slate-500 w-full" />
+                        <div className="border-t border-slate-500 w-full" />
+                        <div className="border-t border-slate-500 w-full" />
+                      </div>
+                      <Sparkline data={service.latencies} status={service.status} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {services.length === 0 && (
+              <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl bg-slate-900/30">
+                <Server className="w-10 h-10 text-slate-600 mb-3" />
+                <p className="text-slate-400 font-medium">No hay servicios configurados.</p>
+                <button onClick={() => setShowAddModal(true)} className="mt-3 text-emerald-400 hover:text-emerald-300 text-sm font-medium">
+                  Añadir el primer objetivo →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar de Audit Trail */}
+      <div className="w-full xl:w-80 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden flex-shrink-0 xl:h-[calc(100vh-8rem)]">
+        <div className="p-4 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-10">
+          <h3 className="font-semibold text-slate-200 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-400" />
+            Audit Trail
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5">Registro de eventos (cronológico inverso)</p>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+          {events.map((event, idx) => {
+            const isCritical = event.type === 'CRITICAL';
+            const isRecovery = event.type === 'RECOVERY';
+            const time = new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            return (
+              <div key={event.id} className="relative pl-4 pb-1">
+                {idx !== events.length - 1 && (
+                  <div className="absolute left-[7px] top-4 bottom-[-1rem] w-px bg-slate-800" />
+                )}
+                
+                <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${
+                  isCritical ? 'bg-rose-500' : isRecovery ? 'bg-emerald-500' : 'bg-slate-400'
+                }`} />
+                
+                <div className={`text-xs p-3 rounded-lg border ${
+                  isCritical ? 'bg-rose-950/20 border-rose-900/50 text-rose-200' : 
+                  isRecovery ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-200' : 
+                  'bg-slate-800/50 border-slate-700/50 text-slate-300'
+                }`}>
+                  <div className="flex justify-between items-start mb-1 gap-2">
+                    <span className="font-semibold truncate">{event.serviceName}</span>
+                    <span className="text-[10px] text-slate-500 whitespace-nowrap">{time}</span>
+                  </div>
+                  <p className={`leading-relaxed ${
+                    isCritical ? 'text-rose-300/80' : isRecovery ? 'text-emerald-300/80' : 'text-slate-400'
+                  }`}>
+                    {event.message}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          
+          {events.length === 0 && (
+            <div className="text-center py-8 text-slate-500 text-sm">
+              No hay eventos recientes
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
