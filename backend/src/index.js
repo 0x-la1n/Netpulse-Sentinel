@@ -6,7 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-const { testConnection } = require('./db/connection');
+const { testConnection, ensureSchema } = require('./db/connection');
 
 // ── Routes ───
 const targetsRouter = require('./routes/target');
@@ -19,8 +19,8 @@ const server = http.createServer(app);
 // ── Socket.io setup ──
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
 
@@ -29,7 +29,7 @@ app.set('io', io);
 
 // ── Middleware ───
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({ origin: '*' }));
 app.use(morgan('dev'));
 app.use(express.json());
 
@@ -67,6 +67,7 @@ const PORT = process.env.PORT || 3001;
 
 async function start() {
   try {
+    await ensureSchema();
     await testConnection();
     server.listen(PORT, () => {
       console.log(`🚀 NetPulse Backend running on http://localhost:${PORT}`);
