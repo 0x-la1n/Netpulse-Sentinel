@@ -9,7 +9,7 @@ export const navItems = [
   { id: 'ayuda', label: 'Ayuda', icon: CircleHelp },
 ];
 
-export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }) => {
+export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, onLogout }) => {
   return (
     <>
       {/* Mobile Overlay */}
@@ -75,7 +75,10 @@ export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobile
 
         {/* Logout Button */}
         <div className="p-4 border-t border-slate-800">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-colors focus:outline-none">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-colors focus:outline-none"
+          >
             <LogOut className="w-5 h-5" />
             Cerrar Sesión
           </button>

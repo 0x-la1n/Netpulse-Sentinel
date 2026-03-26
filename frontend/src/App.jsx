@@ -2,13 +2,25 @@ import React, { useState } from 'react';
 import { LayoutDashboard } from 'lucide-react';
 
 import { useSentinelState } from './hooks/useSentinelState';
+import { useAuth } from './hooks/useAuth';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { AddTargetModal } from './components/AddTargetModal';
 import { HelpManual } from './components/HelpManual';
+import { AuthScreen } from './components/AuthScreen';
 
 export default function App() {
+  const {
+    token,
+    user,
+    isLoading,
+    isAuthenticated,
+    login,
+    register,
+    logout,
+  } = useAuth();
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -19,9 +31,21 @@ export default function App() {
     setIsSimulating,
     handleCreateService,
     handleDeleteService
-  } = useSentinelState();
+  } = useSentinelState({ token, onUnauthorized: logout });
 
   const [showAddModal, setShowAddModal] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center">
+        Cargando sesión...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen onLogin={login} onRegister={register} loading={isLoading} />;
+  }
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-50 overflow-hidden font-sans">
@@ -51,6 +75,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
+        onLogout={logout}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -60,6 +85,7 @@ export default function App() {
           isSimulating={isSimulating}
           setIsSimulating={setIsSimulating}
           setShowAddModal={setShowAddModal}
+          user={user}
         />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-950 p-4 lg:p-6 custom-scrollbar">

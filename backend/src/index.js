@@ -7,8 +7,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 
 const { testConnection, ensureSchema } = require('./db/connection');
+const { authenticate } = require('./middleware/auth');
 
 // ── Routes ───
+const authRouter = require('./routes/auth');
 const targetsRouter = require('./routes/target');
 const statusRouter = require('./routes/status');
 const eventsRouter = require('./routes/events');
@@ -34,9 +36,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // ── API Routes ──
-app.use('/api/targets', targetsRouter);
-app.use('/api/status', statusRouter);
-app.use('/api/events', eventsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/targets', authenticate, targetsRouter);
+app.use('/api/status', authenticate, statusRouter);
+app.use('/api/events', authenticate, eventsRouter);
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {

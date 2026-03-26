@@ -1,9 +1,23 @@
 import React from 'react';
-import { Menu, Play, Plus, Pause } from 'lucide-react';
+import { Menu, Play, Plus, Pause, UserRound } from 'lucide-react';
 
-export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimulating, setShowAddModal }) => {
+function getInitials(name) {
+  const safeName = String(name || '').trim();
+  if (!safeName) return 'US';
+
+  const parts = safeName.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+}
+
+export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimulating, setShowAddModal, user }) => {
+  const initials = getInitials(user?.name);
+
   return (
-    <header className="h-16 flex-shrink-0 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 sticky top-0 z-30">
+    <header className="h-16 shrink-0 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 sticky top-0 z-30">
       <div className="flex items-center gap-4">
         <button
           onClick={() => setIsMobileMenuOpen(true)}
@@ -17,7 +31,7 @@ export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimu
         </h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <button 
           onClick={() => setIsSimulating(!isSimulating)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors focus:outline-none ${
@@ -41,6 +55,28 @@ export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimu
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Nuevo Objetivo</span>
         </button>
+
+        <div
+          className="hidden md:flex items-center gap-2 pl-2 pr-2 py-1 rounded-full border border-slate-700/80 bg-slate-900/80 shadow-inner shadow-slate-800/60 max-w-60 min-w-0 group relative"
+          title={user?.name || 'Usuario'}
+        >
+          <div className="relative w-9 h-9 rounded-full bg-linear-to-br from-emerald-400 to-cyan-500 text-slate-950 font-bold text-xs flex items-center justify-center shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/20">
+            {initials}
+            <span className="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-900" />
+          </div>
+          <div className="leading-tight min-w-0 w-32.5 lg:w-41.25">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 truncate">Usuario</p>
+            <p className="text-sm text-slate-100 font-medium truncate block">{user?.name || 'Usuario'}</p>
+          </div>
+
+          <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[calc(100%+10px)] whitespace-nowrap px-3 py-1.5 rounded-md border border-slate-700 bg-slate-950 text-xs text-slate-100 shadow-xl opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-40">
+            {user?.name || 'Usuario'}
+          </div>
+        </div>
+
+        <div className="md:hidden w-9 h-9 rounded-full border border-slate-700 bg-slate-800/80 flex items-center justify-center text-slate-300">
+          <UserRound className="w-4 h-4" />
+        </div>
       </div>
     </header>
   );

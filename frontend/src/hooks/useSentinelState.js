@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function useSentinelState() {
+export function useSentinelState({ token, onUnauthorized }) {
   const [services, setServices] = useState([]);
   const [events, setEvents] = useState([{ 
     id: 101, 
@@ -14,11 +14,25 @@ export function useSentinelState() {
   const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
   const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const handleUnauthorized = (response) => {
+    if (response.status === 401 && onUnauthorized) {
+      onUnauthorized();
+    }
+  };
+
   // 1. Cargar targets iniciales de la base de datos
   useEffect(() => {
     const fetchTargets = async () => {
       try {
-        const response = await fetch(`${API_URL}/targets`);
+        const response = await fetch(`${API_URL}/targets`, {
+          headers: authHeaders,
+        });
+        handleUnauthorized(response);
         if (response.ok) {
           const data = await response.json();
           setServices(data);
@@ -27,8 +41,10 @@ export function useSentinelState() {
         console.error('Error fetching targets:', error);
       }
     };
-    fetchTargets();
-  }, [API_URL]);
+    if (token) {
+      fetchTargets();
+    }
+  }, [API_URL, token]);
 
   // 2. Motor de Polling (Simulación de WebSockets/Fondo)
   useEffect(() => {
@@ -107,7 +123,9 @@ export function useSentinelState() {
     try {
       const response = await fetch(`${API_URL}/targets/${idToRemove}`, {
         method: 'DELETE',
+        headers: authHeaders,
       });
+      handleUnauthorized(response);
       if (response.ok) {
         const serviceToRemove = services.find(s => s.id === idToRemove);
         setServices(prev => prev.filter(s => s.id !== idToRemove));
@@ -128,9 +146,10 @@ export function useSentinelState() {
     try {
       const response = await fetch(`${API_URL}/targets`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ name: newName, type: newType, target: newTarget })
       });
+      handleUnauthorized(response);
       
       if (response.ok) {
         const newService = await response.json();
