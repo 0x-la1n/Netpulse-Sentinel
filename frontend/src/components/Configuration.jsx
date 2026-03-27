@@ -7,6 +7,7 @@ export const Configuration = ({ settings, onSave }) => {
     eventLimit: 50,
     latencyHistory: 15,
   });
+  const [saveState, setSaveState] = useState('idle');
 
   useEffect(() => {
     if (settings) {
@@ -23,15 +24,19 @@ export const Configuration = ({ settings, onSave }) => {
     setLocal(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSaveState('saving');
+
     const normalized = {
       pollInterval: Math.max(200, Number(local.pollInterval)),
       failureRate: Math.min(1, Math.max(0, Number(local.failureRate))),
       eventLimit: Math.max(10, Number(local.eventLimit)),
       latencyHistory: Math.max(5, Number(local.latencyHistory)),
     };
-    onSave(normalized);
+
+    const ok = await onSave(normalized);
+    setSaveState(ok ? 'saved' : 'error');
   };
 
   return (
@@ -42,7 +47,7 @@ export const Configuration = ({ settings, onSave }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="block">
-            <span className="text-sm text-slate-300">Intervalo de Polling</span>
+            <span className="text-sm text-slate-300">Intervalo Global de Polling</span>
             <input
               type="number"
               min="200"
@@ -51,7 +56,7 @@ export const Configuration = ({ settings, onSave }) => {
               onChange={e => handleChange('pollInterval', e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 text-slate-100 p-2"
             />
-            <span className="text-xs text-slate-500">Milisegundos entre ciclos (= 200)</span>
+            <span className="text-xs text-slate-500">Milisegundos entre ciclos globales de actualización (mínimo 200).</span>
           </label>
 
           <label className="block">
@@ -97,11 +102,16 @@ export const Configuration = ({ settings, onSave }) => {
         <div className="flex items-center gap-2 pt-2">
           <button
             type="submit"
+            disabled={saveState === 'saving'}
             className="px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition"
           >
-            Guardar Configuración
+            {saveState === 'saving' ? 'Guardando...' : 'Guardar Configuración'}
           </button>
-          <span className="text-sm text-slate-400">Tus settings se aplicarán inmediatamente.</span>
+          <span className="text-sm text-slate-400">
+            {saveState === 'saved' ? 'Configuración guardada y aplicada.' :
+              saveState === 'error' ? 'No se pudo guardar la configuración.' :
+                'Tus settings se aplicarán inmediatamente.'}
+          </span>
         </div>
       </form>
     </div>

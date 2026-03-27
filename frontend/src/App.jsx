@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LayoutDashboard } from 'lucide-react';
 
 import { useSentinelState } from './hooks/useSentinelState';
@@ -32,9 +32,66 @@ export default function App() {
     latencyHistory: 15,
   });
 
-  const handleSaveSettings = (newSettings) => {
-    setSettings(newSettings);
-    // TODO: Save to backend when implemented
+  const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const apiUrl = useMemo(() => (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`), [rawApiUrl]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const loadConfig = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/config`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data?.pollIntervalMs) {
+          setSettings((prev) => ({
+            ...prev,
+            pollInterval: Number(data.pollIntervalMs),
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    };
+
+    loadConfig();
+  }, [apiUrl, token]);
+
+  const handleSaveSettings = async (newSettings) => {
+    if (!token) return false;
+
+    try {
+      const response = await fetch(`${apiUrl}/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          pollIntervalMs: Number(newSettings.pollInterval),
+        }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      const pollInterval = Number(data?.pollIntervalMs || newSettings.pollInterval);
+      setSettings({
+        ...newSettings,
+        pollInterval,
+      });
+      return true;
+    } catch (error) {
+      console.error('Error saving config:', error);
+      return false;
+    }
   };
   
   const {
@@ -43,8 +100,14 @@ export default function App() {
     isSimulating,
     setIsSimulating,
     handleCreateService,
-    handleDeleteService
-  } = useSentinelState({ token, onUnauthorized: logout });
+    handleDeleteService,
+  } = useSentinelState({
+    token,
+    onUnauthorized: logout,
+    pollIntervalMs: settings.pollInterval,
+    eventLimit: settings.eventLimit,
+    latencyHistory: settings.latencyHistory,
+  });
 
   const [showAddModal, setShowAddModal] = useState(false);
 

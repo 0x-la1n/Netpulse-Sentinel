@@ -1,15 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 
-export function useSentinelState({ token, onUnauthorized }) {
+export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000, eventLimit = 100, latencyHistory = 15 }) {
   const [services, setServices] = useState([]);
-  const [events, setEvents] = useState([{ 
-    id: 101, 
-    serviceName: 'System', 
-    type: 'INFO', 
-    message: 'Base de datos conectada. Interfaz inicializada.', 
-    timestamp: new Date().toISOString() 
-  }]);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [isSimulating, setIsSimulating] = useState(true);
+  const socketRef = useRef(null);
   
   const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
   const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
@@ -25,100 +21,115 @@ export function useSentinelState({ token, onUnauthorized }) {
     }
   };
 
-  // 1. Cargar targets iniciales de la base de datos
-  useEffect(() => {
-    const fetchTargets = async () => {
-      try {
-        const response = await fetch(`${API_URL}/targets`, {
-          headers: authHeaders,
-        });
-        handleUnauthorized(response);
-        if (response.ok) {
-          const data = await response.json();
-          setServices(data);
-        }
-      } catch (error) {
-        console.error('Error fetching targets:', error);
+  const refreshServices = async () => {
+    try {
+      const response = await fetch(`${API_URL}/targets`, {
+        headers: authHeaders,
+      });
+      handleUnauthorized(response);
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data);
       }
-    };
-    if (token) {
-      fetchTargets();
+    } catch (error) {
+      console.error('Error fetching targets:', error);
     }
+  };
+
+  const refreshEvents = async () => {
+    try {
+      const response = await fetch(`${API_URL}/events?limit=${eventLimit}`, {
+        headers: authHeaders,
+      });
+      handleUnauthorized(response);
+      if (response.ok) {
+        const data = await response.json();
+        setEvents(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  // Carga inicial
+  useEffect(() => {
+    if (!token) return;
+    refreshServices();
+    refreshEvents();
   }, [API_URL, token]);
 
-  // 2. Motor de Polling (Simulación de WebSockets/Fondo)
+  // Polling real contra backend
   useEffect(() => {
-    if (!isSimulating) return;
+    if (!token || !isSimulating) return;
 
+    const safeInterval = Math.max(200, Number(pollIntervalMs) || 5000);
     const interval = setInterval(() => {
-      setServices(prevServices => {
-        let newEvents = [];
-        const updatedServices = prevServices.map(service => {
-          // Generar latencia aleatoria simulada (basada en el último valor)
-          const lastLat = service.latencies[service.latencies.length - 1] || 50;
-          const variance = Math.floor(Math.random() * 21) - 10; // -10 a +10
-          let newLat = Math.max(1, lastLat + variance);
-          
-          // Simular fallo de red (10% de probabilidad en cada ciclo para hacer la demo visible)
-          const isNetworkFailure = Math.random() < 0.1;
-          
-          let newRetries = isNetworkFailure ? service.retries + 1 : 0;
-          let newStatus = service.status;
-          
-          // Si acumula 3 fallos y está UP, se cae
-          if (newRetries >= 3 && service.status === 'UP') {
-            newStatus = 'DOWN';
-            newEvents.unshift({
-              id: Date.now() + Math.random(),
-              serviceName: service.name,
-              type: 'CRITICAL',
-              message: `El servicio no responde tras 3 reintentos.`,
-              timestamp: new Date().toISOString()
-            });
-          }
-          // Si se recupera (no hay fallo) y estaba DOWN
-          else if (!isNetworkFailure && service.status === 'DOWN') {
-            newStatus = 'UP';
-            newEvents.unshift({
-              id: Date.now() + Math.random(),
-              serviceName: service.name,
-              type: 'RECOVERY',
-              message: `Servicio en línea y resolviendo normalmente.`,
-              timestamp: new Date().toISOString()
-            });
-            // Al recuperarse, resetear latencia a un valor normal
-            newLat = 50;
-          }
-          
-          if (isNetworkFailure) {
-            newLat = 0; // represent timeout for DOWN or failure
-          }
-
-          const newLatencies = [...service.latencies, newLat].slice(-15); // Mantener últimos 15 puntos
-
-          return {
-            ...service,
-            status: newStatus,
-            retries: newRetries,
-            latencies: newLatencies,
-            // Simular bajada de uptime si está down, o pequeña subida si está up
-            uptime: newStatus === 'DOWN' ? Math.max(0, service.uptime - 0.05) : Math.min(100, service.uptime + 0.001)
-          };
-        });
-
-        if (newEvents.length > 0) {
-          // Add new events to the TOP of the array (chronological inverse)
-          setEvents(prev => [...newEvents, ...prev].slice(0, 50)); // Mantener últimos 50 eventos
-        }
-
-        return updatedServices;
-      });
-    }, 2000);
+      refreshServices();
+      refreshEvents();
+    }, safeInterval);
 
     return () => clearInterval(interval);
-  }, [isSimulating]);
+  }, [API_URL, token, isSimulating, pollIntervalMs, eventLimit]);
 
-  // 3. Funciones de CRUD
+  // Socket.io en tiempo real para estado y audit trail
+  useEffect(() => {
+    if (!token || !isSimulating) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      return;
+    }
+
+    const socket = io(rawApiUrl, {
+      transports: ['websocket'],
+      withCredentials: false,
+    });
+
+    socket.on('status:update', (payload) => {
+      if (!payload || !payload.targetId) return;
+
+      setServices((prev) => prev.map((service) => {
+        if (service.id !== payload.targetId) return service;
+
+        const nextLatency = payload.latencyMs == null ? 0 : payload.latencyMs;
+        const nextLatencies = [...(service.latencies || []), nextLatency].slice(-Math.max(5, Number(latencyHistory) || 15));
+
+        return {
+          ...service,
+          status: payload.status || service.status,
+          retries: typeof payload.retries === 'number' ? payload.retries : service.retries,
+          latencies: nextLatencies.length > 0 ? nextLatencies : [0],
+        };
+      }));
+    });
+
+    socket.on('status:event', (eventPayload) => {
+      if (!eventPayload) return;
+
+      setEvents((prev) => [{
+        id: eventPayload.id || `${eventPayload.targetId || 'evt'}-${Date.now()}`,
+        targetId: eventPayload.targetId,
+        serviceName: eventPayload.serviceName || 'Sistema',
+        type: eventPayload.type || 'INFO',
+        status: eventPayload.status || 'UNKNOWN',
+        latencyMs: eventPayload.latencyMs ?? null,
+        message: eventPayload.message || 'Evento de monitoreo.',
+        timestamp: eventPayload.timestamp || new Date().toISOString(),
+      }, ...prev].slice(0, Math.max(10, Number(eventLimit) || 100)));
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+    };
+  }, [rawApiUrl, token, isSimulating, eventLimit, latencyHistory]);
+
+  // Funciones de CRUD
   const handleDeleteService = async (idToRemove) => {
     try {
       const response = await fetch(`${API_URL}/targets/${idToRemove}`, {
@@ -127,15 +138,8 @@ export function useSentinelState({ token, onUnauthorized }) {
       });
       handleUnauthorized(response);
       if (response.ok) {
-        const serviceToRemove = services.find(s => s.id === idToRemove);
-        setServices(prev => prev.filter(s => s.id !== idToRemove));
-        setEvents(prev => [{
-          id: Date.now(),
-          serviceName: serviceToRemove?.name || 'Sistema',
-          type: 'INFO',
-          message: `Objetivo removido de la base de datos.`,
-          timestamp: new Date().toISOString()
-        }, ...prev].slice(0, 50));
+        await refreshServices();
+        await refreshEvents();
       }
     } catch (error) {
       console.error('Error deleting target:', error);
@@ -152,17 +156,8 @@ export function useSentinelState({ token, onUnauthorized }) {
       handleUnauthorized(response);
       
       if (response.ok) {
-        const newService = await response.json();
-        
-        // Inject at the beginning
-        setServices(prev => [newService, ...prev]);
-        setEvents(prev => [{
-          id: Date.now() + 1,
-          serviceName: newName,
-          type: 'INFO',
-          message: `Nuevo objetivo insertado en MySQL [${newType}: ${newTarget}]`,
-          timestamp: new Date().toISOString()
-        }, ...prev].slice(0, 50));
+        await refreshServices();
+        await refreshEvents();
         
         return true; // Exito
       }
@@ -178,6 +173,6 @@ export function useSentinelState({ token, onUnauthorized }) {
     isSimulating,
     setIsSimulating,
     handleCreateService,
-    handleDeleteService
+    handleDeleteService,
   };
 }
