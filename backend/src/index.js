@@ -14,6 +14,7 @@ const authRouter = require('./routes/auth');
 const targetsRouter = require('./routes/target');
 const statusRouter = require('./routes/status');
 const eventsRouter = require('./routes/events');
+const configRouter = require('./routes/config');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +41,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/targets', authenticate, targetsRouter);
 app.use('/api/status', authenticate, statusRouter);
 app.use('/api/events', authenticate, eventsRouter);
+app.use('/api/config', authenticate, configRouter);
 
 // ── Health check ──
 app.get('/api/health', (req, res) => {
@@ -78,8 +80,8 @@ async function start() {
     });
 
     // Iniciar el motor de sondeo
-    // const { startPoller } = require('./services/poller');
-    // startPoller(io);
+    const { startPoller } = require('./services/poller');
+    startPoller(io);
 
   } catch (err) {
     console.error('❌ Failed to start server:', err.message);
