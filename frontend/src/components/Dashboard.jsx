@@ -52,25 +52,53 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
             <LayoutDashboard className="w-5 h-5 text-slate-400" />
             Grid de Nodos a Monitorizar
           </h3>
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              Latencia normal (&lt; 500 ms)
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              Latencia media (500 - 999 ms)
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+              Latencia alta (&gt;= 1000 ms / Timeout)
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {services.map(service => {
               const isUp = service.status === 'UP';
+              const isPaused = service.status === 'PAUSED';
               const currentLat = service.latencies[service.latencies.length - 1] || 0;
+              const isHighLatency = currentLat >= 1000;
+              const isMediumLatency = currentLat >= 500 && currentLat < 1000;
+              const latencyClass = isPaused
+                ? 'text-slate-400'
+                : isUp
+                  ? (isHighLatency ? 'text-rose-400' : isMediumLatency ? 'text-amber-400' : 'text-emerald-300')
+                  : 'text-rose-400';
               
               return (
                 <div key={service.id} className={`bg-slate-900 border rounded-xl p-4 flex flex-col relative overflow-hidden transition-all duration-300 ${
-                  isUp ? 'border-slate-800 hover:border-slate-700' : 'border-rose-900/50 bg-rose-950/20'
+                  isPaused
+                    ? 'border-amber-900/40 bg-amber-950/10'
+                    : isUp
+                      ? 'border-slate-800 hover:border-slate-700'
+                      : 'border-rose-900/50 bg-rose-950/20'
                 }`}>
                   <div className="flex justify-between items-start mb-3">
                     <div className="min-w-0 pr-2">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h4 className="font-semibold text-slate-100 truncate max-w-[150px]">{service.name}</h4>
                         <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
-                          isUp 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse'
+                          isPaused
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            : isUp
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse'
                         }`}>
-                          {isUp ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          {isPaused ? <Clock className="w-3 h-3" /> : (isUp ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />)}
                           {service.status}
                         </span>
                       </div>
@@ -92,12 +120,13 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
                   {/* Sparkline & Stats */}
                   <div className="mt-auto pt-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-                      <span className="flex items-center gap-1 font-mono">
+                      <span className={`flex items-center gap-1 font-mono ${latencyClass}`}>
                         <Clock className="w-3.5 h-3.5" /> 
-                        {isUp ? `${currentLat} ms` : 'Timeout'}
+                          {isPaused ? 'Pausado' : (isUp ? `${currentLat} ms` : 'Timeout')}
                       </span>
                       <span className="font-medium">{service.uptime.toFixed(2)}% SLA</span>
                     </div>
+
                     <div className="px-1 relative h-10 w-full">
                       <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none py-0.5">
                         <div className="border-t border-slate-500 w-full" />

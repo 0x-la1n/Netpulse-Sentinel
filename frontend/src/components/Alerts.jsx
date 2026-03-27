@@ -4,12 +4,14 @@ import { BellRing, AlertTriangle, Info, CheckCircle, XCircle } from 'lucide-reac
 export const Alerts = ({ events }) => {
   const getEventIcon = (type) => {
     switch (type) {
+      case 'CRITICAL':
       case 'ERROR':
         return <XCircle className="w-5 h-5 text-red-400" />;
-      case 'WARNING':
-        return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
+      case 'RECOVERY':
       case 'SUCCESS':
         return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'WARNING':
+        return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
       case 'INFO':
       default:
         return <Info className="w-5 h-5 text-blue-400" />;
@@ -18,12 +20,14 @@ export const Alerts = ({ events }) => {
 
   const getEventColor = (type) => {
     switch (type) {
+      case 'CRITICAL':
       case 'ERROR':
         return 'border-red-800 bg-red-950/20';
-      case 'WARNING':
-        return 'border-yellow-800 bg-yellow-950/20';
+      case 'RECOVERY':
       case 'SUCCESS':
         return 'border-green-800 bg-green-950/20';
+      case 'WARNING':
+        return 'border-yellow-800 bg-yellow-950/20';
       case 'INFO':
       default:
         return 'border-blue-800 bg-blue-950/20';
@@ -79,9 +83,9 @@ export const Alerts = ({ events }) => {
                   </p>
                   <div className="mt-2">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      event.type === 'ERROR' ? 'bg-red-900/50 text-red-300' :
+                      event.type === 'ERROR' || event.type === 'CRITICAL' ? 'bg-red-900/50 text-red-300' :
                       event.type === 'WARNING' ? 'bg-yellow-900/50 text-yellow-300' :
-                      event.type === 'SUCCESS' ? 'bg-green-900/50 text-green-300' :
+                      event.type === 'SUCCESS' || event.type === 'RECOVERY' ? 'bg-green-900/50 text-green-300' :
                       'bg-blue-900/50 text-blue-300'
                     }`}>
                       {event.type}
