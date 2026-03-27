@@ -43,14 +43,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'password debe tener al menos 6 caracteres' });
     }
 
-    const [[existing]] = await pool.query('SELECT ID FROM Registros WHERE Email = ? LIMIT 1', [email]);
+    const [[existing]] = await pool.query('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
     if (existing) {
       return res.status(409).json({ error: 'Este email ya está registrado' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
-      'INSERT INTO Registros (Nombre, Email, Contraseña) VALUES (?, ?, ?)',
+      'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
       [name, email, passwordHash]
     );
 
@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
     }
 
     const [[user]] = await pool.query(
-      'SELECT ID, Nombre, Email, Contraseña FROM Registros WHERE Email = ? LIMIT 1',
+      'SELECT id, name, email, password_hash FROM users WHERE email = ? LIMIT 1',
       [email]
     );
 
@@ -82,7 +82,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const isValid = await bcrypt.compare(password, user.Contraseña);
+    const isValid = await bcrypt.compare(password, user.password_hash);
     if (!isValid) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -105,7 +105,7 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const [[user]] = await pool.query('SELECT ID, Nombre, Email, created_at FROM Registros WHERE ID = ? LIMIT 1', [req.user.id]);
+    const [[user]] = await pool.query('SELECT id, name, email, created_at FROM users WHERE id = ? LIMIT 1', [req.user.id]);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }

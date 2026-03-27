@@ -9,6 +9,8 @@ import { Dashboard } from './components/Dashboard';
 import { AddTargetModal } from './components/AddTargetModal';
 import { HelpManual } from './components/HelpManual';
 import { AuthScreen } from './components/AuthScreen';
+import { Configuration } from './components/Configuration';
+import { Alerts } from './components/Alerts';
 
 export default function App() {
   const {
@@ -23,6 +25,17 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [settings, setSettings] = useState({
+    pollInterval: 2000,
+    failureRate: 0.1,
+    eventLimit: 50,
+    latencyHistory: 15,
+  });
+
+  const handleSaveSettings = (newSettings) => {
+    setSettings(newSettings);
+    // TODO: Save to backend when implemented
+  };
   
   const {
     services,
@@ -95,6 +108,13 @@ export default function App() {
               events={events}
               handleDeleteService={handleDeleteService}
               setShowAddModal={setShowAddModal}
+            />
+          ) : activeTab === 'alertas' ? (
+            <Alerts events={events} />
+          ) : activeTab === 'configuracion' ? (
+            <Configuration 
+              settings={settings}
+              onSave={handleSaveSettings}
             />
           ) : activeTab === 'ayuda' ? (
             <HelpManual />
