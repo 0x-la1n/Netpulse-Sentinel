@@ -81,6 +81,80 @@ Campos relevantes:
 6. Si hay cambio de estado, genera evento de transicion.
 7. Emite actualizaciones por Socket.io al frontend.
 
+### 4.1 Funcionamiento interno del motor de polling
+El motor de polling ejecuta un ciclo continuo y se comporta como un scheduler dinamico.
+
+#### a) Inicializacion
+- Al arrancar el backend, se invoca startPoller.
+- El motor crea un estado interno en memoria con:
+	- Lista de timers activos por target.
+	- Referencia al servidor Socket.io.
+	- Configuracion global opcional de intervalo.
+	- Estado auxiliar para simuladores de demo.
+
+#### b) Sincronizacion de schedules
+- Cada 15 segundos el poller consulta objetivos activos en la base de datos.
+- Compara lo recuperado con los timers actuales:
+	- Si un target nuevo aparece, crea timer.
+	- Si un target se desactiva, elimina timer.
+	- Si cambia host, tipo, puerto o intervalo, reprogama timer.
+	- Si no hay cambios, conserva el timer para evitar reinicios innecesarios.
+
+#### c) Regla de intervalo efectiva
+Para calcular cada cuanto se sondea un objetivo, se aplica este orden:
+1. Si existe intervalo global runtime, ese valor domina.
+2. Si no existe, usa interval_sec del target.
+
+Esto permite pruebas de demo con un ritmo uniforme sin perder la configuracion por objetivo.
+
+#### d) Ejecucion por target
+Cada timer invoca pollTarget(target) y el ciclo hace:
+1. Evalua conectividad segun tipo (HTTP, PING, PORT).
+2. Deriva nextStatus (UP o DOWN).
+3. Lee estado previo en current_status.
+4. Calcula failure_count consecutivo.
+5. Actualiza current_status con status, latency_ms, failure_count y last_checked.
+6. Inserta una fila en status_log con checked_at inmutable.
+7. Si hubo transicion de estado (ej. UP -> DOWN), emite status:event.
+8. Siempre emite status:update para refresco en vivo del grid.
+
+#### e) Persistencia y audit trail
+- status_log almacena cada verificacion, lo cual mantiene sparklines y latencias vivas.
+- El Audit Trail de frontend consume eventos de transicion, no cada chequeo, para evitar ruido visual.
+
+### 4.2 Criterio de estado por protocolo
+#### HTTP
+- Ejecuta GET con timeout.
+- UP: codigo 2xx.
+- DOWN: timeout, error de red o codigo fuera de 2xx.
+
+#### PING
+- Ejecuta probe ICMP.
+- UP: host alive.
+- DOWN: sin respuesta.
+
+#### PORT
+- Intenta conexion TCP al host:puerto.
+- UP: connect exitoso.
+- DOWN: timeout o error de socket.
+
+### 4.3 Emision en tiempo real
+El motor usa dos eventos por Socket.io:
+- status:update: estado instantaneo de tarjeta (status, retries, latency, checkedAt).
+- status:event: evento de transicion para audit trail (CRITICAL/RECOVERY).
+
+Con esto el frontend refleja cambios sin esperar al siguiente refresco REST.
+
+### 4.4 Simuladores para demostracion
+El motor incluye reglas de simulacion por host para pruebas controladas:
+- sim.inestable.local: alterna UP/DOWN en cada ciclo.
+- sim.latencia-alta.local: siempre UP con latencia alta variable.
+
+Estas reglas solo aplican a targets HTTP de demo y ayudan a validar:
+- Transiciones de estado.
+- Colores por umbral de latencia.
+- Comportamiento del audit trail.
+
 ## 5. Protocolo de verificaciones
 ### HTTP
 - Se realiza GET con timeout.
