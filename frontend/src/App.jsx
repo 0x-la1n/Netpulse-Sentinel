@@ -7,6 +7,7 @@ import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { AddTargetModal } from './components/AddTargetModal';
+import { EditTargetModal } from './components/EditTargetModal';
 import { HelpManual } from './components/HelpManual';
 import { AuthScreen } from './components/AuthScreen';
 import { Configuration } from './components/Configuration';
@@ -100,6 +101,7 @@ export default function App() {
     isSimulating,
     setIsSimulating,
     handleCreateService,
+    handleUpdateService,
     handleDeleteService,
   } = useSentinelState({
     token,
@@ -110,6 +112,7 @@ export default function App() {
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingService, setEditingService] = useState(null);
 
   if (isLoading) {
     return (
@@ -146,6 +149,14 @@ export default function App() {
         />
       )}
 
+      {editingService && (
+        <EditTargetModal
+          service={editingService}
+          onClose={() => setEditingService(null)}
+          onSave={handleUpdateService}
+        />
+      )}
+
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
@@ -169,6 +180,8 @@ export default function App() {
             <Dashboard 
               services={services}
               events={events}
+              isSimulating={isSimulating}
+              onEditService={setEditingService}
               handleDeleteService={handleDeleteService}
               setShowAddModal={setShowAddModal}
             />
@@ -183,7 +196,7 @@ export default function App() {
             <HelpManual />
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-2xl bg-slate-900/30 max-w-lg w-full m-auto">
-              <div className="w-16 h-16 mb-4 rounded-xl bg-slate-800/80 flex items-center justify-center flex-shrink-0 border border-slate-700">
+              <div className="w-16 h-16 mb-4 rounded-xl bg-slate-800/80 flex items-center justify-center shrink-0 border border-slate-700">
                 <LayoutDashboard className="w-8 h-8 text-slate-500" />
               </div>
               <h2 className="text-xl font-semibold text-slate-200 mb-2">

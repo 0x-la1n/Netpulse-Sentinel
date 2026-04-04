@@ -1,11 +1,19 @@
 import React from 'react';
 import { 
   Server, Activity, ArrowUpRight, ArrowDownRight, 
-  LayoutDashboard, CheckCircle2, XCircle, Trash2, Clock 
+  LayoutDashboard, CheckCircle2, XCircle, Trash2, Clock, Pencil
 } from 'lucide-react';
 import { Sparkline } from './Sparkline';
 
-export const Dashboard = ({ services, events, handleDeleteService, setShowAddModal }) => {
+export const Dashboard = ({ services, events, isSimulating, onEditService, handleDeleteService, setShowAddModal }) => {
+  const isGlobalPaused = !isSimulating;
+
+  const confirmDeleteService = (service) => {
+    const accepted = window.confirm(`¿Seguro que deseas eliminar el nodo \"${service.name}\"? Esta acción no se puede deshacer.`);
+    if (!accepted) return;
+    handleDeleteService(service.id);
+  };
+
   // Cálculos para KPIs
   const totalServices = services.length;
   const upNodes = services.filter(s => s.status === 'UP').length;
@@ -19,7 +27,9 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
       {/* Contenido Principal (KPIs & Grid) */}
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         {/* FAQs/KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-300 ${
+          isGlobalPaused ? 'opacity-60 grayscale-[0.45]' : ''
+        }`}>
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-center relative overflow-hidden">
             <div className="text-sm font-medium text-slate-400 mb-1">Total Servicios</div>
             <div className="text-3xl font-bold text-slate-100">{totalServices}</div>
@@ -47,26 +57,31 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
         </div>
 
         {/* Infrastructure Grid */}
-        <div>
-          <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">
-            <LayoutDashboard className="w-5 h-5 text-slate-400" />
-            Grid de Nodos a Monitorizar
-          </h3>
-          <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              Latencia normal (&lt; 500 ms)
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              Latencia media (500 - 999 ms)
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-              Latencia alta (&gt;= 1000 ms / Timeout)
-            </span>
+        <div className="relative">
+          <div className="mb-4 flex flex-col gap-3 border-b border-slate-800 pb-2 lg:flex-row lg:items-center lg:justify-between">
+            <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 text-slate-400" />
+              Grid de Nodos a Monitorizar
+            </h3>
+
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 lg:justify-end">
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                Latencia normal (&lt; 500 ms)
+              </span>
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                Latencia media (500 - 999 ms)
+              </span>
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                Latencia alta (&gt;= 1000 ms / Timeout)
+              </span>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-all duration-300 ${
+            isGlobalPaused ? 'opacity-55 grayscale-[0.6]' : ''
+          }`}>
             {services.map(service => {
               const isUp = service.status === 'UP';
               const isPaused = service.status === 'PAUSED';
@@ -81,7 +96,9 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
               
               return (
                 <div key={service.id} className={`bg-slate-900 border rounded-xl p-4 flex flex-col relative overflow-hidden transition-all duration-300 ${
-                  isPaused
+                  isGlobalPaused
+                    ? 'border-slate-700/60 bg-slate-900/70'
+                    : isPaused
                     ? 'border-amber-900/40 bg-amber-950/10'
                     : isUp
                       ? 'border-slate-800 hover:border-slate-700'
@@ -108,13 +125,23 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
                       </p>
                     </div>
                     
-                    <button 
-                      onClick={() => handleDeleteService(service.id)}
-                      className="text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 p-1.5 rounded-md transition-colors flex-shrink-0"
-                      title="Eliminar servicio"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => onEditService(service)}
+                        className="text-slate-500 hover:text-amber-300 hover:bg-amber-400/10 p-1.5 rounded-md transition-colors"
+                        title="Editar servicio"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button 
+                        onClick={() => confirmDeleteService(service)}
+                        className="text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 p-1.5 rounded-md transition-colors"
+                        title="Eliminar servicio"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Sparkline & Stats */}
@@ -154,7 +181,7 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
       </div>
 
       {/* Sidebar de Audit Trail */}
-      <div className="w-full xl:w-80 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden flex-shrink-0 xl:h-[calc(100vh-8rem)]">
+      <div className="w-full xl:w-80 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shrink-0 xl:h-[calc(100vh-8rem)]">
         <div className="p-4 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-10">
           <h3 className="font-semibold text-slate-200 flex items-center gap-2">
             <Activity className="w-4 h-4 text-emerald-400" />
@@ -172,7 +199,7 @@ export const Dashboard = ({ services, events, handleDeleteService, setShowAddMod
             return (
               <div key={event.id} className="relative pl-4 pb-1">
                 {idx !== events.length - 1 && (
-                  <div className="absolute left-[7px] top-4 bottom-[-1rem] w-px bg-slate-800" />
+                  <div className="absolute left-[7px] top-4 -bottom-4 w-px bg-slate-800" />
                 )}
                 
                 <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${

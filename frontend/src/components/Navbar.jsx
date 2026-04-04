@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Play, Plus, Pause, UserRound } from 'lucide-react';
+import { CircleAlert, Menu, Play, Plus, Pause, UserRound } from 'lucide-react';
 
 function getInitials(name) {
   const safeName = String(name || '').trim();
@@ -32,6 +32,13 @@ export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimu
       </div>
 
       <div className="flex items-center gap-3 min-w-0">
+        {!isSimulating && (
+          <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-amber-500/40 bg-amber-950/50 text-amber-200 text-xs font-semibold tracking-wide animate-pulse whitespace-nowrap">
+            <CircleAlert className="w-3.5 h-3.5" />
+            Polling en pausa: vista congelada temporalmente.
+          </div>
+        )}
+
         <button 
           onClick={() => setIsSimulating(!isSimulating)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors focus:outline-none ${
