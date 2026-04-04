@@ -4,6 +4,7 @@ import { Globe, X } from 'lucide-react';
 export const AddTargetModal = ({ onClose, onSave }) => {
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('HTTP');
+  const [newPriority, setNewPriority] = useState('MEDIUM');
   const [newTarget, setNewTarget] = useState('');
 
   const handleSubmit = async (e) => {
@@ -11,6 +12,7 @@ export const AddTargetModal = ({ onClose, onSave }) => {
     const success = await onSave({
       newName: newName.trim(),
       newType,
+      newPriority,
       newTarget: newTarget.trim()
     });
     if (success) {
@@ -54,6 +56,19 @@ export const AddTargetModal = ({ onClose, onSave }) => {
               <option value="HTTP">HTTP/HTTPS</option>
               <option value="PING">ICMP Ping</option>
               <option value="PORT">TCP Port</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1.5">Prioridad</label>
+            <select
+              value={newPriority}
+              onChange={e => setNewPriority(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none"
+            >
+              <option value="CRITICAL">Critico</option>
+              <option value="HIGH">Alto</option>
+              <option value="MEDIUM">Medio</option>
+              <option value="LOW">Bajo</option>
             </select>
           </div>
           <div>

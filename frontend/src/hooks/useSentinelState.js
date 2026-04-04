@@ -146,12 +146,12 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
     }
   };
 
-  const handleCreateService = async ({ newName, newType, newTarget }) => {
+  const handleCreateService = async ({ newName, newType, newPriority, newTarget }) => {
     try {
       const response = await fetch(`${API_URL}/targets`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ name: newName, type: newType, target: newTarget })
+        body: JSON.stringify({ name: newName, type: newType, priority: newPriority, target: newTarget })
       });
       handleUnauthorized(response);
       
@@ -167,7 +167,7 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
     return false; // Error
   };
 
-  const handleUpdateService = async ({ id, name, type, target, intervalSec, active }) => {
+  const handleUpdateService = async ({ id, name, type, priority, target, intervalSec, active }) => {
     try {
       const response = await fetch(`${API_URL}/targets/${id}`, {
         method: 'PUT',
@@ -175,6 +175,7 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
         body: JSON.stringify({
           name: String(name || '').trim(),
           type,
+          priority,
           target: String(target || '').trim(),
           interval_sec: Number(intervalSec) || 60,
           active: active ? 1 : 0,

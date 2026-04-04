@@ -8,6 +8,22 @@ import { Sparkline } from './Sparkline';
 export const Dashboard = ({ services, hasTargetFilters, events, isSimulating, onEditService, handleDeleteService, setShowAddModal }) => {
   const isGlobalPaused = !isSimulating;
 
+  const priorityLabel = (value) => {
+    const normalized = String(value || 'MEDIUM').toUpperCase();
+    if (normalized === 'CRITICAL') return 'Critico';
+    if (normalized === 'HIGH') return 'Alto';
+    if (normalized === 'LOW') return 'Bajo';
+    return 'Medio';
+  };
+
+  const priorityClass = (value) => {
+    const normalized = String(value || 'MEDIUM').toUpperCase();
+    if (normalized === 'CRITICAL') return 'bg-rose-500/15 text-rose-300 border border-rose-500/30';
+    if (normalized === 'HIGH') return 'bg-amber-500/15 text-amber-300 border border-amber-500/30';
+    if (normalized === 'LOW') return 'bg-slate-500/15 text-slate-300 border border-slate-500/30';
+    return 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30';
+  };
+
   const confirmDeleteService = (service) => {
     const accepted = window.confirm(`¿Seguro que deseas eliminar el nodo \"${service.name}\"? Esta acción no se puede deshacer.`);
     if (!accepted) return;
@@ -108,6 +124,9 @@ export const Dashboard = ({ services, hasTargetFilters, events, isSimulating, on
                     <div className="min-w-0 pr-2">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h4 className="font-semibold text-slate-100 truncate max-w-[150px]">{service.name}</h4>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${priorityClass(service.priority)}`}>
+                          {priorityLabel(service.priority)}
+                        </span>
                         <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
                           isPaused
                             ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'

@@ -28,6 +28,7 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [targetSearch, setTargetSearch] = useState('');
   const [targetFilter, setTargetFilter] = useState('all');
+  const [targetSort, setTargetSort] = useState('priority-desc');
   const [settings, setSettings] = useState({
     pollInterval: 2000,
     failureRate: 0.1,
@@ -127,7 +128,7 @@ export default function App() {
 
       const matchesTerm = term.length === 0
         ? true
-        : [service.name, service.target, service.type, service.status]
+        : [service.name, service.target, service.type, service.status, service.priority]
           .some((value) => String(value || '').toLowerCase().includes(term));
 
       let matchesFilter = true;
@@ -140,6 +141,52 @@ export default function App() {
       return matchesTerm && matchesFilter;
     });
   }, [services, targetSearch, targetFilter]);
+
+  const sortedServices = useMemo(() => {
+    const priorityWeight = {
+      CRITICAL: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+
+    const statusRiskWeight = {
+      DOWN: 4,
+      PAUSED: 3,
+      UNKNOWN: 2,
+      UP: 1,
+    };
+
+    const list = [...filteredServices];
+
+    list.sort((a, b) => {
+      if (targetSort === 'priority-desc') {
+        const pa = priorityWeight[String(a.priority || 'MEDIUM').toUpperCase()] || 0;
+        const pb = priorityWeight[String(b.priority || 'MEDIUM').toUpperCase()] || 0;
+        if (pb !== pa) return pb - pa;
+      }
+
+      if (targetSort === 'status-risk') {
+        const sa = statusRiskWeight[String(a.status || 'UNKNOWN').toUpperCase()] || 0;
+        const sb = statusRiskWeight[String(b.status || 'UNKNOWN').toUpperCase()] || 0;
+        if (sb !== sa) return sb - sa;
+      }
+
+      if (targetSort === 'latency-desc') {
+        const la = Number(a.latencies?.[a.latencies.length - 1] || 0);
+        const lb = Number(b.latencies?.[b.latencies.length - 1] || 0);
+        if (lb !== la) return lb - la;
+      }
+
+      if (targetSort === 'name-asc') {
+        return String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity: 'base' });
+      }
+
+      return String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity: 'base' });
+    });
+
+    return list;
+  }, [filteredServices, targetSort]);
 
   if (isLoading) {
     return (
@@ -203,13 +250,15 @@ export default function App() {
           setTargetSearch={setTargetSearch}
           targetFilter={targetFilter}
           setTargetFilter={setTargetFilter}
+          targetSort={targetSort}
+          setTargetSort={setTargetSort}
           user={user}
         />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-950 p-4 lg:p-6 custom-scrollbar">
           {activeTab === 'dashboard' ? (
             <Dashboard 
-              services={filteredServices}
+              services={sortedServices}
               hasTargetFilters={hasTargetFilters}
               events={events}
               isSimulating={isSimulating}

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS targets (
   id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
   name          VARCHAR(100)    NOT NULL,                  
   type          ENUM('HTTP','PING','PORT') NOT NULL DEFAULT 'HTTP',
+  priority      ENUM('CRITICAL','HIGH','MEDIUM','LOW') NOT NULL DEFAULT 'MEDIUM',
   host          VARCHAR(255)    NOT NULL,                  
   port          SMALLINT UNSIGNED DEFAULT NULL,            
   interval_sec  SMALLINT UNSIGNED NOT NULL DEFAULT 60,    

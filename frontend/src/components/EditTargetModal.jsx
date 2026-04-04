@@ -20,6 +20,7 @@ function getInitialTargetValue(service) {
 export const EditTargetModal = ({ service, onClose, onSave }) => {
   const [name, setName] = useState(String(service?.name || ''));
   const [type, setType] = useState(String(service?.type || 'HTTP'));
+  const [priority, setPriority] = useState(String(service?.priority || 'MEDIUM'));
   const [target, setTarget] = useState(getInitialTargetValue(service));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +41,7 @@ export const EditTargetModal = ({ service, onClose, onSave }) => {
       id: service.id,
       name: name.trim(),
       type,
+      priority,
       target: target.trim(),
       intervalSec: service.intervalSec,
       active: service.status !== 'PAUSED',
@@ -92,6 +94,20 @@ export const EditTargetModal = ({ service, onClose, onSave }) => {
               <option value="HTTP">HTTP/HTTPS</option>
               <option value="PING">ICMP Ping</option>
               <option value="PORT">TCP Port</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1.5">Prioridad</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none"
+            >
+              <option value="CRITICAL">Critico</option>
+              <option value="HIGH">Alto</option>
+              <option value="MEDIUM">Medio</option>
+              <option value="LOW">Bajo</option>
             </select>
           </div>
 

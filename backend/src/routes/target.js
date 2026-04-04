@@ -5,11 +5,24 @@ const { pool } = require('../db/connection');
 const router = express.Router();
 
 const ALLOWED_TYPES = new Set(['HTTP', 'PING', 'PORT']);
+const ALLOWED_PRIORITIES = new Set(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
 
 function normalizeType(rawType) {
   return String(rawType || '')
     .trim()
     .toUpperCase();
+}
+
+function normalizePriority(rawPriority) {
+  const normalized = String(rawPriority || 'MEDIUM')
+    .trim()
+    .toUpperCase();
+
+  if (!ALLOWED_PRIORITIES.has(normalized)) {
+    return 'MEDIUM';
+  }
+
+  return normalized;
 }
 
 function parsePort(type, target, providedPort) {
@@ -122,6 +135,7 @@ router.get('/', async (req, res) => {
         t.id,
         t.name,
         t.type,
+        t.priority,
         t.host,
         t.port,
         t.interval_sec,
@@ -161,6 +175,7 @@ router.get('/', async (req, res) => {
         id: row.id,
         name: row.name,
         type: row.type,
+        priority: row.priority || 'MEDIUM',
         target: row.type === 'PORT' && row.port ? `${row.host}:${row.port}` : row.host,
         status: row.status,
         uptime: Number(row.uptime),
@@ -181,7 +196,7 @@ router.get('/', async (req, res) => {
 // ── GET /api/targets/:id ──
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, name, type, host, port FROM targets WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT id, name, type, priority, host, port FROM targets WHERE id = ?', [req.params.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
     const row = rows[0];
@@ -189,6 +204,7 @@ router.get('/:id', async (req, res) => {
       id: row.id,
       name: row.name,
       type: row.type,
+      priority: row.priority || 'MEDIUM',
       target: row.type === 'PORT' && row.port ? `${row.host}:${row.port}` : row.host,
       port: row.port,
     });
@@ -202,6 +218,7 @@ router.post('/', async (req, res) => {
   try {
     const name = String(req.body?.name || '').trim();
     const type = normalizeType(req.body?.type);
+    const priority = normalizePriority(req.body?.priority);
     const rawTarget = String(req.body?.target || '').trim();
 
     if (!name || !type || !rawTarget) {
@@ -229,8 +246,8 @@ router.post('/', async (req, res) => {
     const supportsCreatedAt = await hasTargetsColumn('created_at');
     const supportsUpdatedAt = await hasTargetsColumn('updated_at');
 
-    const insertColumns = ['name', 'type', 'host', 'port', 'active'];
-    const insertValues = [name, dbType, host, resolvedPort, 1];
+    const insertColumns = ['name', 'type', 'priority', 'host', 'port', 'active'];
+    const insertValues = [name, dbType, priority, host, resolvedPort, 1];
 
     if (supportsUrl) {
       insertColumns.push('url');
@@ -263,6 +280,7 @@ router.post('/', async (req, res) => {
       id: result.insertId,
       name,
       type,
+      priority,
       target: type === 'PORT' && resolvedPort ? `${host}:${resolvedPort}` : host,
       status: 'UNKNOWN',
       uptime: 100.0,
@@ -287,6 +305,7 @@ router.put('/:id', async (req, res) => {
 
     const name = String(req.body?.name || '').trim();
     const type = normalizeType(req.body?.type);
+    const priority = normalizePriority(req.body?.priority);
     const rawTarget = String(req.body?.target || '').trim();
     const active = req.body?.active == null ? 1 : Number(req.body.active) ? 1 : 0;
     const intervalSec = Number(req.body?.interval_sec || 60);
@@ -316,9 +335,9 @@ router.put('/:id', async (req, res) => {
 
     const [result] = await pool.query(
       `UPDATE targets
-       SET name = ?, type = ?, host = ?, port = ?, interval_sec = ?, active = ?, updated_at = UTC_TIMESTAMP()
+       SET name = ?, type = ?, priority = ?, host = ?, port = ?, interval_sec = ?, active = ?, updated_at = UTC_TIMESTAMP()
        WHERE id = ?`,
-      [name, dbType, validation.normalizedHost, resolvedPort, intervalSec, active, id]
+      [name, dbType, priority, validation.normalizedHost, resolvedPort, intervalSec, active, id]
     );
 
     if (result.affectedRows === 0) {
@@ -329,6 +348,7 @@ router.put('/:id', async (req, res) => {
       id,
       name,
       type,
+      priority,
       target: type === 'PORT' ? `${validation.normalizedHost}:${resolvedPort}` : validation.normalizedHost,
       port: resolvedPort,
       interval_sec: intervalSec,

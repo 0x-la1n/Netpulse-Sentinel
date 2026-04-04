@@ -14,7 +14,7 @@ Este documento detalla las futuras implementaciones y mejoras planificadas para 
 - [x] **Filtro y Búsqueda de Targets:** Facilitar la localización de dispositivos en infraestructuras grandes.
 - [x] **Edición de Targets:** Permitir modificar parámetros (IP, Puertos, Nombre) sin tener que borrar y recrear.
 - [ ] **Intervalos Individuales:** Configuración personalizada de la frecuencia de monitoreo por cada target.
-- [ ] **Prioridad de Targets:** Sistema de ordenamiento por importancia (Crítico, Alto, Medio, Bajo).
+- [x] **Prioridad de Targets:** Sistema de ordenamiento por importancia (Crítico, Alto, Medio, Bajo).
 - [x] **Feedback de Pausa:** Notificación clara y confirmación visual cuando un usuario pausa el monitoreo de un target.
 
 ## ⚙️ Configuración

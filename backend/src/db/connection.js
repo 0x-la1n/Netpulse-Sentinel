@@ -58,6 +58,7 @@ async function ensureSchema() {
         id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
         name          VARCHAR(100)    NOT NULL,
         type          ENUM('HTTP','PING','PORT') NOT NULL DEFAULT 'HTTP',
+        priority      ENUM('CRITICAL','HIGH','MEDIUM','LOW') NOT NULL DEFAULT 'MEDIUM',
         host          VARCHAR(255)    NOT NULL,
         port          SMALLINT UNSIGNED DEFAULT NULL,
         interval_sec  SMALLINT UNSIGNED NOT NULL DEFAULT 60,
@@ -110,6 +111,7 @@ async function ensureSchema() {
     const hasPort = await hasColumn(connection, 'targets', 'port');
     const hasInterval = await hasColumn(connection, 'targets', 'interval_sec');
     const hasActive = await hasColumn(connection, 'targets', 'active');
+    const hasPriority = await hasColumn(connection, 'targets', 'priority');
 
     if (!hasHost) {
       await connection.query('ALTER TABLE targets ADD COLUMN host VARCHAR(255) NULL AFTER type');
@@ -127,6 +129,10 @@ async function ensureSchema() {
       await connection.query('ALTER TABLE targets ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1 AFTER interval_sec');
     }
 
+    if (!hasPriority) {
+      await connection.query("ALTER TABLE targets ADD COLUMN priority ENUM('CRITICAL','HIGH','MEDIUM','LOW') NOT NULL DEFAULT 'MEDIUM' AFTER type");
+    }
+
     if (hasTarget) {
       await connection.query('UPDATE targets SET host = target WHERE (host IS NULL OR host = "") AND target IS NOT NULL');
     }
@@ -138,6 +144,11 @@ async function ensureSchema() {
     const typeColumnDef = await getColumnType(connection, 'targets', 'type');
     if (typeColumnDef && !typeColumnDef.includes("'PORT'")) {
       await connection.query("ALTER TABLE targets MODIFY COLUMN type ENUM('HTTP','PING','PORT') NOT NULL DEFAULT 'HTTP'");
+    }
+
+    const priorityColumnDef = await getColumnType(connection, 'targets', 'priority');
+    if (priorityColumnDef && !priorityColumnDef.includes("'CRITICAL'")) {
+      await connection.query("ALTER TABLE targets MODIFY COLUMN priority ENUM('CRITICAL','HIGH','MEDIUM','LOW') NOT NULL DEFAULT 'MEDIUM'");
     }
 
     await connection.query('UPDATE targets SET host = "unknown" WHERE host IS NULL OR host = ""');

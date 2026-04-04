@@ -1,13 +1,13 @@
 -- NetPulse Sentinel – Datos de partida (7 objetivos de prueba)
 
-INSERT INTO targets (name, type, host, port, interval_sec, active) VALUES
-  ('Google DNS',        'PING',  '8.8.8.8',           NULL, 30,  1),
-  ('Cloudflare DNS',    'PING',  '1.1.1.1',           NULL, 30,  1),
-  ('Google Web',        'HTTP',  'https://google.com', NULL, 60,  1),
-  ('GitHub',            'HTTP',  'https://github.com', NULL, 60,  1),
-  ('Sim Latencia Alta', 'HTTP',  'sim.latencia-alta.local', NULL, 20, 1),
-  ('Sim Caotico',       'HTTP',  'sim.inestable.local', NULL, 15, 1),
-  ('Local SSH',         'PORT',  '127.0.0.1',         22,   120, 0);
+INSERT INTO targets (name, type, priority, host, port, interval_sec, active) VALUES
+  ('Google DNS',        'PING',  'MEDIUM',   '8.8.8.8',           NULL, 30,  1),
+  ('Cloudflare DNS',    'PING',  'MEDIUM',   '1.1.1.1',           NULL, 30,  1),
+  ('Google Web',        'HTTP',  'HIGH',     'https://google.com', NULL, 60,  1),
+  ('GitHub',            'HTTP',  'HIGH',     'https://github.com', NULL, 60,  1),
+  ('Sim Latencia Alta', 'HTTP',  'CRITICAL', 'sim.latencia-alta.local', NULL, 20, 1),
+  ('Sim Caotico',       'HTTP',  'CRITICAL', 'sim.inestable.local', NULL, 15, 1),
+  ('Local SSH',         'PORT',  'LOW',      '127.0.0.1',         22,   120, 0);
 
   -- Inicializa current_status con UNKNOWN para cada objetivo.
 

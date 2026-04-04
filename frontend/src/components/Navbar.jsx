@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleAlert, ListFilter, Menu, Play, Plus, Pause, Search, UserRound } from 'lucide-react';
+import { ArrowUpDown, CircleAlert, ListFilter, Menu, Play, Plus, Pause, Search, UserRound } from 'lucide-react';
 
 function getInitials(name) {
   const safeName = String(name || '').trim();
@@ -23,6 +23,8 @@ export const Navbar = ({
   setTargetSearch,
   targetFilter,
   setTargetFilter,
+  targetSort,
+  setTargetSort,
   user,
 }) => {
   const initials = getInitials(user?.name);
@@ -43,7 +45,7 @@ export const Navbar = ({
       </div>
 
       <div className="hidden lg:flex flex-1 justify-center px-6 min-w-0">
-        <div className="w-full max-w-2xl flex items-center gap-2">
+        <div className="w-full max-w-4xl flex items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -69,6 +71,20 @@ export const Navbar = ({
               <option value="http">Tipo: HTTP</option>
               <option value="ping">Tipo: PING</option>
               <option value="port">Tipo: PORT</option>
+            </select>
+          </div>
+
+          <div className="relative shrink-0">
+            <ArrowUpDown className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={targetSort}
+              onChange={(e) => setTargetSort(e.target.value)}
+              className="pl-9 pr-8 py-1.5 rounded-md border border-slate-700 bg-slate-900/80 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none"
+            >
+              <option value="priority-desc">Orden: Prioridad (Critico a Bajo)</option>
+              <option value="status-risk">Orden: Estado (Riesgo)</option>
+              <option value="latency-desc">Orden: Latencia (Mayor a Menor)</option>
+              <option value="name-asc">Orden: Nombre (A-Z)</option>
             </select>
           </div>
         </div>
