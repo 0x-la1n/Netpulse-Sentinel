@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Sparkline } from './Sparkline';
 
-export const Dashboard = ({ services, events, isSimulating, onEditService, handleDeleteService, setShowAddModal }) => {
+export const Dashboard = ({ services, hasTargetFilters, events, isSimulating, onEditService, handleDeleteService, setShowAddModal }) => {
   const isGlobalPaused = !isSimulating;
 
   const confirmDeleteService = (service) => {
@@ -170,10 +170,16 @@ export const Dashboard = ({ services, events, isSimulating, onEditService, handl
             {services.length === 0 && (
               <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl bg-slate-900/30">
                 <Server className="w-10 h-10 text-slate-600 mb-3" />
-                <p className="text-slate-400 font-medium">No hay servicios configurados.</p>
-                <button onClick={() => setShowAddModal(true)} className="mt-3 text-emerald-400 hover:text-emerald-300 text-sm font-medium">
-                  Añadir el primer objetivo →
-                </button>
+                {hasTargetFilters ? (
+                  <p className="text-slate-400 font-medium">No hay resultados para los filtros aplicados.</p>
+                ) : (
+                  <>
+                    <p className="text-slate-400 font-medium">No hay servicios configurados.</p>
+                    <button onClick={() => setShowAddModal(true)} className="mt-3 text-emerald-400 hover:text-emerald-300 text-sm font-medium">
+                      Añadir el primer objetivo →
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

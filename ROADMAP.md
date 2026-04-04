@@ -11,7 +11,7 @@ Este documento detalla las futuras implementaciones y mejoras planificadas para 
 - [ ] **Definición de Objetivo:** Clarificar y documentar el propósito del apartado de servicios para mejorar la UX.
 
 ## 📊 Dashboard
-- [ ] **Filtro y Búsqueda de Targets:** Facilitar la localización de dispositivos en infraestructuras grandes.
+- [x] **Filtro y Búsqueda de Targets:** Facilitar la localización de dispositivos en infraestructuras grandes.
 - [x] **Edición de Targets:** Permitir modificar parámetros (IP, Puertos, Nombre) sin tener que borrar y recrear.
 - [ ] **Intervalos Individuales:** Configuración personalizada de la frecuencia de monitoreo por cada target.
 - [ ] **Prioridad de Targets:** Sistema de ordenamiento por importancia (Crítico, Alto, Medio, Bajo).

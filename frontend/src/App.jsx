@@ -26,6 +26,8 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [targetSearch, setTargetSearch] = useState('');
+  const [targetFilter, setTargetFilter] = useState('all');
   const [settings, setSettings] = useState({
     pollInterval: 2000,
     failureRate: 0.1,
@@ -114,6 +116,31 @@ export default function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
 
+  const hasTargetFilters = targetSearch.trim().length > 0 || targetFilter !== 'all';
+
+  const filteredServices = useMemo(() => {
+    const term = targetSearch.trim().toLowerCase();
+
+    return services.filter((service) => {
+      const status = String(service.status || '').toLowerCase();
+      const type = String(service.type || '').toLowerCase();
+
+      const matchesTerm = term.length === 0
+        ? true
+        : [service.name, service.target, service.type, service.status]
+          .some((value) => String(value || '').toLowerCase().includes(term));
+
+      let matchesFilter = true;
+      if (targetFilter === 'up' || targetFilter === 'down' || targetFilter === 'paused') {
+        matchesFilter = status === targetFilter;
+      } else if (targetFilter === 'http' || targetFilter === 'ping' || targetFilter === 'port') {
+        matchesFilter = type === targetFilter;
+      }
+
+      return matchesTerm && matchesFilter;
+    });
+  }, [services, targetSearch, targetFilter]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center">
@@ -172,13 +199,18 @@ export default function App() {
           isSimulating={isSimulating}
           setIsSimulating={setIsSimulating}
           setShowAddModal={setShowAddModal}
+          targetSearch={targetSearch}
+          setTargetSearch={setTargetSearch}
+          targetFilter={targetFilter}
+          setTargetFilter={setTargetFilter}
           user={user}
         />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-950 p-4 lg:p-6 custom-scrollbar">
           {activeTab === 'dashboard' ? (
             <Dashboard 
-              services={services}
+              services={filteredServices}
+              hasTargetFilters={hasTargetFilters}
               events={events}
               isSimulating={isSimulating}
               onEditService={setEditingService}

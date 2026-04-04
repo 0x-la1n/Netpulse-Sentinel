@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleAlert, Menu, Play, Plus, Pause, UserRound } from 'lucide-react';
+import { CircleAlert, ListFilter, Menu, Play, Plus, Pause, Search, UserRound } from 'lucide-react';
 
 function getInitials(name) {
   const safeName = String(name || '').trim();
@@ -13,7 +13,18 @@ function getInitials(name) {
   return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
 }
 
-export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimulating, setShowAddModal, user }) => {
+export const Navbar = ({
+  activeTab,
+  setIsMobileMenuOpen,
+  isSimulating,
+  setIsSimulating,
+  setShowAddModal,
+  targetSearch,
+  setTargetSearch,
+  targetFilter,
+  setTargetFilter,
+  user,
+}) => {
   const initials = getInitials(user?.name);
 
   return (
@@ -29,6 +40,38 @@ export const Navbar = ({ activeTab, setIsMobileMenuOpen, isSimulating, setIsSimu
         <h1 className="text-xl font-semibold text-slate-100 hidden sm:block capitalize">
           {activeTab}
         </h1>
+      </div>
+
+      <div className="hidden lg:flex flex-1 justify-center px-6 min-w-0">
+        <div className="w-full max-w-2xl flex items-center gap-2">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={targetSearch}
+              onChange={(e) => setTargetSearch(e.target.value)}
+              placeholder="Buscar nodo por nombre, target, tipo o estado"
+              className="w-full pl-9 pr-3 py-1.5 rounded-md border border-slate-700 bg-slate-900/80 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div className="relative shrink-0">
+            <ListFilter className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={targetFilter}
+              onChange={(e) => setTargetFilter(e.target.value)}
+              className="pl-9 pr-8 py-1.5 rounded-md border border-slate-700 bg-slate-900/80 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none"
+            >
+              <option value="all">Todos</option>
+              <option value="up">Estado: UP</option>
+              <option value="down">Estado: DOWN</option>
+              <option value="paused">Estado: PAUSED</option>
+              <option value="http">Tipo: HTTP</option>
+              <option value="ping">Tipo: PING</option>
+              <option value="port">Tipo: PORT</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 min-w-0">
