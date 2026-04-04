@@ -12,10 +12,10 @@ Este documento detalla las futuras implementaciones y mejoras planificadas para 
 
 ## 📊 Dashboard
 - [ ] **Filtro y Búsqueda de Targets:** Facilitar la localización de dispositivos en infraestructuras grandes.
-- [ ] **Edición de Targets:** Permitir modificar parámetros (IP, Puertos, Nombre) sin tener que borrar y recrear.
+- [x] **Edición de Targets:** Permitir modificar parámetros (IP, Puertos, Nombre) sin tener que borrar y recrear.
 - [ ] **Intervalos Individuales:** Configuración personalizada de la frecuencia de monitoreo por cada target.
 - [ ] **Prioridad de Targets:** Sistema de ordenamiento por importancia (Crítico, Alto, Medio, Bajo).
-- [ ] **Feedback de Pausa:** Notificación clara y confirmación visual cuando un usuario pausa el monitoreo de un target.
+- [x] **Feedback de Pausa:** Notificación clara y confirmación visual cuando un usuario pausa el monitoreo de un target.
 
 ## ⚙️ Configuración
 - [ ] **Gestión de Usuarios:** Separar el flujo de trabajo de creación y administración de usuarios.

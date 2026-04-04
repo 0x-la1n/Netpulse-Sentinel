@@ -167,12 +167,46 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
     return false; // Error
   };
 
+  const handleUpdateService = async ({ id, name, type, target, intervalSec, active }) => {
+    try {
+      const response = await fetch(`${API_URL}/targets/${id}`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify({
+          name: String(name || '').trim(),
+          type,
+          target: String(target || '').trim(),
+          interval_sec: Number(intervalSec) || 60,
+          active: active ? 1 : 0,
+        }),
+      });
+
+      handleUnauthorized(response);
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        return {
+          ok: false,
+          error: data?.error || 'No se pudo actualizar el objetivo.',
+        };
+      }
+
+      await refreshServices();
+      await refreshEvents();
+      return { ok: true };
+    } catch (error) {
+      console.error('Error updating target:', error);
+      return { ok: false, error: 'Error de red al actualizar el objetivo.' };
+    }
+  };
+
   return {
     services,
     events,
     isSimulating,
     setIsSimulating,
     handleCreateService,
+    handleUpdateService,
     handleDeleteService,
   };
 }
