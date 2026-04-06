@@ -1,8 +1,9 @@
 import React from 'react';
-import { LayoutDashboard, Server, BellRing, Settings, CircleHelp, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Server, BellRing, Settings, CircleHelp, LogOut, X, BarChart3 } from 'lucide-react';
 
 export const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'history', label: 'Historial', icon: BarChart3 },
   { id: 'servicios', label: 'Servicios', icon: Server },
   { id: 'alertas', label: 'Alertas', icon: BellRing },
   { id: 'configuracion', label: 'Configuración', icon: Settings },

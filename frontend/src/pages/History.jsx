@@ -1,0 +1,253 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowLeftRight, BarChart3, Clock3, Gauge, Server } from 'lucide-react';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
+
+export const History = ({ services, token, apiUrl }) => {
+  const [selectedId, setSelectedId] = useState('');
+  const [latencyPoints, setLatencyPoints] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
+  const selectedService = useMemo(
+    () => services.find((service) => String(service.id) === String(selectedId)) || services[0] || null,
+    [services, selectedId]
+  );
+
+  useEffect(() => {
+    if (!selectedService) {
+      setSelectedId('');
+      setLatencyPoints([]);
+      return;
+    }
+
+    setSelectedId(String(selectedService.id));
+  }, [selectedService]);
+
+  useEffect(() => {
+    if (!token || !selectedService) return;
+
+    const controller = new AbortController();
+
+    const loadLatency = async () => {
+      setIsLoading(true);
+      setLoadError('');
+
+      try {
+        const response = await fetch(`${apiUrl}/events/${selectedService.id}/latency`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error('No se pudo cargar el historial de latencia.');
+        }
+
+        const data = await response.json();
+        setLatencyPoints(Array.isArray(data) ? data : []);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setLatencyPoints([]);
+          setLoadError(error.message || 'Error cargando la gráfica.');
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadLatency();
+
+    return () => controller.abort();
+  }, [apiUrl, selectedService, token]);
+
+  const chartData = useMemo(() => {
+    const labels = latencyPoints.map((point) => {
+      const date = new Date(point.checked_at);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    });
+
+    const values = latencyPoints.map((point) => (point.latency_ms == null ? 0 : Number(point.latency_ms)));
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Latencia (ms)',
+          data: values,
+          borderColor: '#34d399',
+          backgroundColor: 'rgba(52, 211, 153, 0.16)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 2,
+          pointHoverRadius: 5,
+        },
+      ],
+    };
+  }, [latencyPoints]);
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#94a3b8',
+          maxTicksLimit: 10,
+        },
+        grid: {
+          color: 'rgba(51, 65, 85, 0.35)',
+        },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: '#94a3b8',
+        },
+        grid: {
+          color: 'rgba(51, 65, 85, 0.35)',
+        },
+      },
+    },
+  }), []);
+
+  const latestLatency = latencyPoints.at(-1)?.latency_ms ?? null;
+  const availablePoints = latencyPoints.length;
+
+  return (
+    <div className="h-full flex flex-col gap-6 text-slate-100">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Analítica en tiempo real
+          </div>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-50">Historial de latencia</h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-400">
+            Gráfica de las últimas 24 horas por objetivo, alimentada desde el histórico de verificaciones.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 shadow-lg shadow-slate-950/20">
+          <Server className="h-5 w-5 text-slate-400" />
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Servicio activo</div>
+            <div className="text-sm font-semibold text-slate-100">{selectedService?.name || 'Sin servicios'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Puntos</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-50">{availablePoints}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Latencia actual</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-50">{latestLatency == null ? 'N/A' : `${latestLatency} ms`}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Cobertura</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-50">24 h</div>
+        </div>
+      </div>
+
+      <div className="grid flex-1 gap-6 xl:grid-cols-[280px_1fr]">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+            <ArrowLeftRight className="h-4 w-4 text-emerald-400" />
+            Objetivos
+          </div>
+          <div className="mt-4 space-y-2 max-h-[28rem] overflow-y-auto pr-1 custom-scrollbar">
+            {services.map((service) => {
+              const isSelected = String(service.id) === String(selectedService?.id);
+
+              return (
+                <button
+                  key={service.id}
+                  onClick={() => setSelectedId(String(service.id))}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                    isSelected
+                      ? 'border-emerald-500/30 bg-emerald-500/10'
+                      : 'border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-900/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-slate-100">{service.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">{service.type} · {service.target}</div>
+                    </div>
+                    <div className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${service.status === 'UP' ? 'bg-emerald-500/10 text-emerald-300' : service.status === 'DOWN' ? 'bg-rose-500/10 text-rose-300' : 'bg-slate-500/10 text-slate-300'}`}>
+                      {service.status}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            {services.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-800 p-4 text-sm text-slate-400">
+                No hay servicios disponibles para graficar.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-4 md:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-100">Latencia de las últimas 24 horas</h3>
+              <p className="mt-1 text-sm text-slate-400">
+                {selectedService ? `${selectedService.name} · ${selectedService.target}` : 'Selecciona un servicio para ver su curva.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-slate-800 bg-slate-950/60 px-3 py-1.5 text-xs text-slate-400">
+              <Clock3 className="h-3.5 w-3.5 text-slate-500" />
+              UTC / 24h
+            </div>
+          </div>
+
+          <div className="mt-5 h-[22rem] rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                Cargando datos de latencia...
+              </div>
+            ) : loadError ? (
+              <div className="flex h-full items-center justify-center text-sm text-rose-300">
+                {loadError}
+              </div>
+            ) : latencyPoints.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                No hay registros en las últimas 24 horas.
+              </div>
+            ) : (
+              <Line data={chartData} options={chartOptions} />
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-950/60 px-3 py-1.5">
+              <Gauge className="h-3.5 w-3.5 text-emerald-400" />
+              Datos desde /api/events/:targetId/latency
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

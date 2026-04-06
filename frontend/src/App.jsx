@@ -6,6 +6,7 @@ import { useAuth } from './hooks/useAuth';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
+import { History } from './pages/History';
 import { AddTargetModal } from './components/AddTargetModal';
 import { EditTargetModal } from './components/EditTargetModal';
 import { HelpManual } from './components/HelpManual';
@@ -265,6 +266,12 @@ export default function App() {
               onEditService={setEditingService}
               handleDeleteService={handleDeleteService}
               setShowAddModal={setShowAddModal}
+            />
+          ) : activeTab === 'history' ? (
+            <History
+              services={sortedServices}
+              token={token}
+              apiUrl={apiUrl}
             />
           ) : activeTab === 'alertas' ? (
             <Alerts events={events} />

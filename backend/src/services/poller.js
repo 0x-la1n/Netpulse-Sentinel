@@ -7,6 +7,7 @@ const DEFAULT_TIMEOUT_MS = 5000;
 const MIN_INTERVAL_SEC = 10;
 const MAX_INTERVAL_SEC = 3600;
 const RELOAD_INTERVAL_MS = 15000;
+const FAILURE_THRESHOLD = Math.max(1, Number(process.env.FAILURE_THRESHOLD) || 3);
 
 const pollerState = {
   started: false,
@@ -231,7 +232,7 @@ function eventFromStatus(status) {
 async function pollTarget(target, io) {
   try {
     const result = await evaluateTarget(target);
-    const nextStatus = result.up ? 'UP' : 'DOWN';
+    const rawStatus = result.up ? 'UP' : 'DOWN';
 
     const [currentRows] = await pool.query(
       'SELECT status, failure_count FROM current_status WHERE target_id = ? LIMIT 1',
@@ -240,7 +241,10 @@ async function pollTarget(target, io) {
 
     const previousStatus = currentRows[0]?.status || 'UNKNOWN';
     const previousFailures = Number(currentRows[0]?.failure_count || 0);
-    const nextFailureCount = nextStatus === 'DOWN' ? previousFailures + 1 : 0;
+    const nextFailureCount = rawStatus === 'DOWN' ? previousFailures + 1 : 0;
+    const nextStatus = rawStatus === 'DOWN'
+      ? (nextFailureCount >= FAILURE_THRESHOLD ? 'DOWN' : previousStatus === 'UNKNOWN' ? 'UNKNOWN' : 'UP')
+      : 'UP';
 
     await pool.query(
       `UPDATE current_status
