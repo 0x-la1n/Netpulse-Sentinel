@@ -5,29 +5,40 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
-export const History = ({ services, token, apiUrl }) => {
+export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) => {
   const [selectedId, setSelectedId] = useState('');
   const [latencyPoints, setLatencyPoints] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
 
+  const selectedServiceId = useMemo(() => {
+    if (services.length === 0) return '';
+
+    const hasSelected = services.some((service) => String(service.id) === String(selectedId));
+    return hasSelected ? String(selectedId) : String(services[0].id);
+  }, [services, selectedId]);
+
   const selectedService = useMemo(
-    () => services.find((service) => String(service.id) === String(selectedId)) || services[0] || null,
-    [services, selectedId]
+    () => services.find((service) => String(service.id) === String(selectedServiceId)) || null,
+    [services, selectedServiceId]
   );
 
   useEffect(() => {
-    if (!selectedService) {
-      setSelectedId('');
+    if (!selectedServiceId) {
+      if (selectedId !== '') {
+        setSelectedId('');
+      }
       setLatencyPoints([]);
       return;
     }
 
-    setSelectedId(String(selectedService.id));
-  }, [selectedService]);
+    if (selectedId !== selectedServiceId) {
+      setSelectedId(selectedServiceId);
+    }
+  }, [selectedId, selectedServiceId]);
 
   useEffect(() => {
-    if (!token || !selectedService) return;
+    if (!token || !selectedServiceId) return;
 
     const controller = new AbortController();
 
@@ -36,7 +47,7 @@ export const History = ({ services, token, apiUrl }) => {
       setLoadError('');
 
       try {
-        const response = await fetch(`${apiUrl}/events/${selectedService.id}/latency`, {
+        const response = await fetch(`${apiUrl}/events/${selectedServiceId}/latency`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -64,8 +75,16 @@ export const History = ({ services, token, apiUrl }) => {
 
     loadLatency();
 
-    return () => controller.abort();
-  }, [apiUrl, selectedService, token]);
+    const safeInterval = Math.max(3000, Number(refreshIntervalMs) || 15000);
+    const refreshTimer = setInterval(() => {
+      loadLatency();
+    }, safeInterval);
+
+    return () => {
+      clearInterval(refreshTimer);
+      controller.abort();
+    };
+  }, [apiUrl, refreshIntervalMs, selectedServiceId, token]);
 
   const chartData = useMemo(() => {
     const labels = latencyPoints.map((point) => {
@@ -222,8 +241,14 @@ export const History = ({ services, token, apiUrl }) => {
             </div>
           </div>
 
-          <div className="mt-5 h-[22rem] rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-            {isLoading ? (
+          <div className="relative mt-5 h-[22rem] rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
+            {isLoading && latencyPoints.length > 0 && (
+              <div className="absolute right-4 top-3 z-10 rounded-full border border-slate-700 bg-slate-900/90 px-2.5 py-1 text-[11px] text-slate-300">
+                Actualizando...
+              </div>
+            )}
+
+            {isLoading && latencyPoints.length === 0 ? (
               <div className="flex h-full items-center justify-center text-sm text-slate-400">
                 Cargando datos de latencia...
               </div>

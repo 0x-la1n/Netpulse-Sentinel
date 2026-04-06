@@ -7,13 +7,21 @@ const DEFAULT_TIMEOUT_MS = 5000;
 const MIN_INTERVAL_SEC = 10;
 const MAX_INTERVAL_SEC = 3600;
 const RELOAD_INTERVAL_MS = 15000;
-const FAILURE_THRESHOLD = Math.max(1, Number(process.env.FAILURE_THRESHOLD) || 3);
+
+function normalizeFailureThreshold(raw) {
+  const value = Number(raw);
+  if (!Number.isInteger(value)) return null;
+  if (value < 1) return 1;
+  if (value > 10) return 10;
+  return value;
+}
 
 const pollerState = {
   started: false,
   timers: new Map(),
   io: null,
   globalIntervalSec: null,
+  failureThreshold: normalizeFailureThreshold(process.env.FAILURE_THRESHOLD) || 3,
   simulatedFlips: new Map(),
 };
 
@@ -243,7 +251,7 @@ async function pollTarget(target, io) {
     const previousFailures = Number(currentRows[0]?.failure_count || 0);
     const nextFailureCount = rawStatus === 'DOWN' ? previousFailures + 1 : 0;
     const nextStatus = rawStatus === 'DOWN'
-      ? (nextFailureCount >= FAILURE_THRESHOLD ? 'DOWN' : previousStatus === 'UNKNOWN' ? 'UNKNOWN' : 'UP')
+      ? (nextFailureCount >= pollerState.failureThreshold ? 'DOWN' : previousStatus === 'UNKNOWN' ? 'UNKNOWN' : 'UP')
       : 'UP';
 
     await pool.query(
@@ -372,14 +380,26 @@ async function setGlobalPollingIntervalSec(rawIntervalSec) {
   return pollerState.globalIntervalSec;
 }
 
+async function setFailureThreshold(rawFailureThreshold) {
+  const normalized = normalizeFailureThreshold(rawFailureThreshold);
+  if (normalized == null) {
+    throw new Error('failureThreshold invalido');
+  }
+
+  pollerState.failureThreshold = normalized;
+  return pollerState.failureThreshold;
+}
+
 function getPollerConfig() {
   return {
     globalPollingIntervalSec: pollerState.globalIntervalSec,
+    failureThreshold: pollerState.failureThreshold,
   };
 }
 
 module.exports = {
   startPoller,
   setGlobalPollingIntervalSec,
+  setFailureThreshold,
   getPollerConfig,
 };

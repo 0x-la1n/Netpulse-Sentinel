@@ -32,9 +32,10 @@ export default function App() {
   const [targetSort, setTargetSort] = useState('priority-desc');
   const [settings, setSettings] = useState({
     pollInterval: 2000,
-    failureRate: 0.1,
+    failureThreshold: 3,
     eventLimit: 50,
     latencyHistory: 15,
+    historyRefreshMs: 15000,
   });
 
   const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -53,12 +54,11 @@ export default function App() {
 
         if (!response.ok) return;
         const data = await response.json();
-        if (data?.pollIntervalMs) {
-          setSettings((prev) => ({
-            ...prev,
-            pollInterval: Number(data.pollIntervalMs),
-          }));
-        }
+        setSettings((prev) => ({
+          ...prev,
+          pollInterval: Number(data?.pollIntervalMs || prev.pollInterval),
+          failureThreshold: Number(data?.failureThreshold || prev.failureThreshold),
+        }));
       } catch (error) {
         console.error('Error loading config:', error);
       }
@@ -79,6 +79,7 @@ export default function App() {
         },
         body: JSON.stringify({
           pollIntervalMs: Number(newSettings.pollInterval),
+          failureThreshold: Number(newSettings.failureThreshold),
         }),
       });
 
@@ -88,9 +89,11 @@ export default function App() {
 
       const data = await response.json();
       const pollInterval = Number(data?.pollIntervalMs || newSettings.pollInterval);
+      const failureThreshold = Number(data?.failureThreshold || newSettings.failureThreshold);
       setSettings({
         ...newSettings,
         pollInterval,
+        failureThreshold,
       });
       return true;
     } catch (error) {
@@ -272,6 +275,7 @@ export default function App() {
               services={sortedServices}
               token={token}
               apiUrl={apiUrl}
+              refreshIntervalMs={settings.historyRefreshMs}
             />
           ) : activeTab === 'alertas' ? (
             <Alerts events={events} />
