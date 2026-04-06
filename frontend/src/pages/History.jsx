@@ -10,6 +10,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
   const [latencyPoints, setLatencyPoints] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const bucketMinutes = 10;
 
   const selectedServiceId = useMemo(() => {
     if (services.length === 0) return '';
@@ -47,7 +48,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
       setLoadError('');
 
       try {
-        const response = await fetch(`${apiUrl}/events/${selectedServiceId}/latency`, {
+        const response = await fetch(`${apiUrl}/events/${selectedServiceId}/latency?bucketMinutes=${bucketMinutes}`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
@@ -84,7 +85,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
       clearInterval(refreshTimer);
       controller.abort();
     };
-  }, [apiUrl, refreshIntervalMs, selectedServiceId, token]);
+  }, [apiUrl, bucketMinutes, refreshIntervalMs, selectedServiceId, token]);
 
   const chartData = useMemo(() => {
     const labels = latencyPoints.map((point) => {
@@ -103,9 +104,11 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
           borderColor: '#34d399',
           backgroundColor: 'rgba(52, 211, 153, 0.16)',
           fill: true,
-          tension: 0.35,
-          pointRadius: 2,
-          pointHoverRadius: 5,
+          tension: 0.2,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          borderWidth: 2,
+          spanGaps: true,
         },
       ],
     };
@@ -114,6 +117,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    normalized: true,
     plugins: {
       legend: {
         display: false,
@@ -127,7 +131,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
       x: {
         ticks: {
           color: '#94a3b8',
-          maxTicksLimit: 10,
+          maxTicksLimit: 8,
         },
         grid: {
           color: 'rgba(51, 65, 85, 0.35)',
@@ -142,6 +146,10 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
           color: 'rgba(51, 65, 85, 0.35)',
         },
       },
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false,
     },
   }), []);
 
@@ -158,7 +166,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
           </div>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-50">Historial de latencia</h2>
           <p className="mt-1 max-w-2xl text-sm text-slate-400">
-            Gráfica de las últimas 24 horas por objetivo, alimentada desde el histórico de verificaciones.
+            Gráfica de las últimas 24 horas por objetivo, agregada en bloques de {bucketMinutes} minutos para mantener el panel fluido.
           </p>
         </div>
 
@@ -237,7 +245,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
             </div>
             <div className="flex items-center gap-2 rounded-full border border-slate-800 bg-slate-950/60 px-3 py-1.5 text-xs text-slate-400">
               <Clock3 className="h-3.5 w-3.5 text-slate-500" />
-              UTC / 24h
+              UTC / 24h · {bucketMinutes}m
             </div>
           </div>
 

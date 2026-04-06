@@ -1,5 +1,20 @@
 import React from 'react';
-import { ArrowUpDown, CircleAlert, ListFilter, Menu, Play, Plus, Pause, Search, UserRound } from 'lucide-react';
+import {
+  ArrowUpDown,
+  BarChart3,
+  BellRing,
+  CircleAlert,
+  CircleHelp,
+  LayoutDashboard,
+  ListFilter,
+  Menu,
+  Play,
+  Plus,
+  Pause,
+  Search,
+  Settings,
+  UserRound,
+} from 'lucide-react';
 
 function getInitials(name) {
   const safeName = String(name || '').trim();
@@ -11,6 +26,18 @@ function getInitials(name) {
   }
 
   return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+}
+
+function getTabIcon(tab) {
+  const normalized = String(tab || '').toLowerCase();
+
+  if (normalized === 'dashboard') return LayoutDashboard;
+  if (normalized === 'history') return BarChart3;
+  if (normalized === 'alertas') return BellRing;
+  if (normalized === 'configuracion') return Settings;
+  if (normalized === 'ayuda') return CircleHelp;
+
+  return LayoutDashboard;
 }
 
 export const Navbar = ({
@@ -28,6 +55,7 @@ export const Navbar = ({
   user,
 }) => {
   const initials = getInitials(user?.name);
+  const ActiveIcon = getTabIcon(activeTab);
 
   return (
     <header className="h-16 shrink-0 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 sticky top-0 z-30">
@@ -39,7 +67,8 @@ export const Navbar = ({
           <Menu className="w-5 h-5" />
         </button>
         
-        <h1 className="text-xl font-semibold text-slate-100 hidden sm:block capitalize">
+        <h1 className="hidden sm:flex items-center gap-2 text-xl font-semibold text-slate-100 capitalize">
+          <ActiveIcon className="h-5 w-5 text-emerald-400" />
           {activeTab}
         </h1>
       </div>
