@@ -1,10 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, Server, BellRing, Settings, CircleHelp, LogOut, X, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, BellRing, Settings, CircleHelp, LogOut, X, BarChart3, Server, FileText } from 'lucide-react';
 
 export const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'history', label: 'Historial', icon: BarChart3 },
-  { id: 'servicios', label: 'Servicios', icon: Server },
+  { id: 'reportes', label: 'Reportes', icon: FileText },
   { id: 'alertas', label: 'Alertas', icon: BellRing },
   { id: 'configuracion', label: 'Configuración', icon: Settings },
   { id: 'ayuda', label: 'Ayuda', icon: CircleHelp },

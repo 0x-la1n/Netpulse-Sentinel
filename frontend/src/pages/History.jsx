@@ -157,45 +157,44 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
   const availablePoints = latencyPoints.length;
 
   return (
-    <div className="h-full flex flex-col gap-6 text-slate-100">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="w-full space-y-4 pb-5 text-slate-100">
+      <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-4 md:p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-0.5 text-[11px] font-semibold text-emerald-300">
             <BarChart3 className="h-3.5 w-3.5" />
-            Analítica en tiempo real
+            Centro de Historial
           </div>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-50">Historial de latencia</h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-400">
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-100 md:text-2xl">Historial de latencia</h2>
+          <p className="mt-1.5 max-w-3xl text-xs text-slate-400 md:text-sm">
             Gráfica de las últimas 24 horas por objetivo, agregada en bloques de {bucketMinutes} minutos para mantener el panel fluido.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 shadow-lg shadow-slate-950/20">
-          <Server className="h-5 w-5 text-slate-400" />
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Servicio activo</div>
-            <div className="text-sm font-semibold text-slate-100">{selectedService?.name || 'Sin servicios'}</div>
-          </div>
+        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-[11px] text-slate-400">
+          <Server className="h-4 w-4 text-slate-400" />
+          Servicio activo: <span className="font-semibold text-slate-100">{selectedService?.name || 'Sin servicios'}</span>
         </div>
       </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Puntos</div>
-          <div className="mt-2 text-2xl font-semibold text-slate-50">{availablePoints}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Puntos</div>
+          <div className="mt-1 text-xl font-semibold text-slate-100">{availablePoints}</div>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Latencia actual</div>
-          <div className="mt-2 text-2xl font-semibold text-slate-50">{latestLatency == null ? 'N/A' : `${latestLatency} ms`}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Latencia actual</div>
+          <div className="mt-1 text-xl font-semibold text-slate-100">{latestLatency == null ? 'N/A' : `${latestLatency} ms`}</div>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Cobertura</div>
-          <div className="mt-2 text-2xl font-semibold text-slate-50">24 h</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Cobertura</div>
+          <div className="mt-1 text-xl font-semibold text-slate-100">24 h</div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid flex-1 gap-6 xl:grid-cols-[280px_1fr]">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-4">
+      <section className="grid gap-4 xl:grid-cols-[280px_1fr]">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
             <ArrowLeftRight className="h-4 w-4 text-emerald-400" />
             Objetivos
@@ -235,11 +234,11 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-4 md:p-6">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 md:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-slate-100">Latencia de las últimas 24 horas</h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <h3 className="text-base font-semibold text-slate-100 md:text-lg">Latencia de las últimas 24 horas</h3>
+              <p className="mt-1 text-xs text-slate-400 md:text-sm">
                 {selectedService ? `${selectedService.name} · ${selectedService.target}` : 'Selecciona un servicio para ver su curva.'}
               </p>
             </div>
@@ -280,7 +279,7 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
             </span>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

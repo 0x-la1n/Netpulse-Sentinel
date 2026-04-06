@@ -64,7 +64,7 @@ export const Configuration = ({ settings, onSave }) => {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-0.5 text-[11px] font-semibold text-emerald-300">
               <SlidersHorizontal className="h-3 w-3" />
-              Control Center
+              Centro de Configuración
             </div>
             <h2 className="mt-2 text-xl font-semibold text-slate-100 md:text-2xl">Configuración avanzada de monitoreo</h2>
             <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-slate-400 md:text-sm">

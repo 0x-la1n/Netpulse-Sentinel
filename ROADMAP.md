@@ -3,12 +3,13 @@
 Este documento detalla las futuras implementaciones y mejoras planificadas para el proyecto. Sirve como guía de desarrollo y control de progreso.
 
 ## 🔔 Alertas
-- [ ] **Filtro y Búsqueda:** Capacidad para filtrar alertas por severidad, fecha o target.
+- [x] **Filtro y Búsqueda:** Capacidad para filtrar alertas por severidad, fecha o target.
 - [ ] **Detalle de Servicios:** Vista expandida para ver qué servicios específicos están fallando dentro de un target.
 
-## 🛠️ Servicios
-- [ ] **Exportación de Datos:** Botón para exportar el historial de servicios a formatos CSV o PDF.
-- [ ] **Definición de Objetivo:** Clarificar y documentar el propósito del apartado de servicios para mejorar la UX.
+## 📈 Reportes
+- [x] **Centro de Reportes:** Panel central para consultar reportes predefinidos y personalizados por el usuario.
+- [x] **Exportación de Datos:** Botón para exportar reportes a formatos CSV o PDF.
+- [ ] **Definición de Objetivo:** Clarificar y documentar el propósito del apartado de reportes para mejorar la UX.
 
 ## 📊 Dashboard
 - [x] **Filtro y Búsqueda de Targets:** Facilitar la localización de dispositivos en infraestructuras grandes.
@@ -22,6 +23,11 @@ Este documento detalla las futuras implementaciones y mejoras planificadas para 
 - [ ] **Edición de Perfiles:** Permitir a los usuarios cambiar sus propios datos o los de otros (según permisos).
 - [ ] **Tematización (Dark/Light Mode):** Implementar switch para alternar entre tema claro y oscuro.
 - [ ] **Control de Intervalos Global:** Interruptor maestro para activar o desactivar el sistema de monitoreo globalmente.
+
+## ✅ Recomendaciones Prioritarias
+1. **Gestión de Usuarios y Roles:** separar alta, edición, permisos y recuperación de acceso.
+2. **Intervalos Individuales por Target:** permitir que cada objetivo tenga su propia frecuencia de sondeo.
+3. **Exportación de Datos:** añadir salida a CSV/PDF para alertas, historial y reportes operativos.
 
 ---
 > [!TIP]

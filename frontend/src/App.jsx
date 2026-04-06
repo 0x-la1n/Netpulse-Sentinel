@@ -13,6 +13,7 @@ import { HelpManual } from './components/HelpManual';
 import { AuthScreen } from './components/AuthScreen';
 import { Configuration } from './components/Configuration';
 import { Alerts } from './components/Alerts';
+import { Reports } from './components/Reports';
 
 export default function App() {
   const {
@@ -277,6 +278,8 @@ export default function App() {
               apiUrl={apiUrl}
               refreshIntervalMs={settings.historyRefreshMs}
             />
+          ) : activeTab === 'reportes' ? (
+            <Reports services={sortedServices} events={events} />
           ) : activeTab === 'alertas' ? (
             <Alerts events={events} />
           ) : activeTab === 'configuracion' ? (
