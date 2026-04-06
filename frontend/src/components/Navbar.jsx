@@ -74,12 +74,11 @@ export const Navbar = ({
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="min-w-0">
-            <h1 className="hidden sm:flex items-center gap-2 text-lg font-semibold text-slate-100 capitalize">
-              <ActiveIcon className="h-5 w-5 text-emerald-400" />
+          <div className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+            <ActiveIcon className="h-4.5 w-4.5 text-emerald-400" />
+            <h1 className="text-[1.08rem] font-semibold leading-none text-slate-100 capitalize">
               {activeTab}
             </h1>
-            <p className="hidden xl:block text-[11px] text-slate-500">Búsqueda, filtros y orden para la vista activa</p>
           </div>
         </div>
 
@@ -177,15 +176,14 @@ export const Navbar = ({
           </button>
 
           <div
-            className="hidden md:flex items-center gap-2 pl-2 pr-2 py-1 rounded-full border border-slate-700/80 bg-slate-900/80 shadow-inner shadow-slate-800/60 max-w-60 min-w-0 group relative"
+            className="hidden md:flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-2.5 py-1.5 max-w-60 min-w-0 group relative"
             title={user?.name || 'Usuario'}
           >
-            <div className="relative w-9 h-9 rounded-full bg-linear-to-br from-emerald-400 to-cyan-500 text-slate-950 font-bold text-xs flex items-center justify-center shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/20">
+            <div className="w-8 h-8 rounded-md border border-slate-700 bg-slate-800 text-slate-200 font-semibold text-[11px] flex items-center justify-center">
               {initials}
-              <span className="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-900" />
             </div>
             <div className="leading-tight min-w-0 w-32.5 lg:w-41.25">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 truncate">Usuario</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 truncate">Usuario</p>
               <p className="text-sm text-slate-100 font-medium truncate block">{user?.name || 'Usuario'}</p>
             </div>
 
