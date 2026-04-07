@@ -1,19 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { buildAuthHeaders, getApiUrl, getSocketUrl } from '../lib/api';
 
 export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000, eventLimit = 100, latencyHistory = 15 }) {
   const [services, setServices] = useState([]);
   const [events, setEvents] = useState([]);
   const [isSimulating, setIsSimulating] = useState(true);
   const socketRef = useRef(null);
-  
-  const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-  const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
+  const API_URL = getApiUrl();
+  const socketUrl = getSocketUrl();
 
-  const authHeaders = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  const authHeaders = buildAuthHeaders(token);
 
   const handleUnauthorized = (response) => {
     if (response.status === 401 && onUnauthorized) {
@@ -81,7 +78,7 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
       return;
     }
 
-    const socket = io(rawApiUrl, {
+    const socket = io(socketUrl, {
       transports: ['websocket'],
       withCredentials: false,
     });
@@ -127,7 +124,7 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
         socketRef.current = null;
       }
     };
-  }, [rawApiUrl, token, isSimulating, eventLimit, latencyHistory]);
+  }, [socketUrl, token, isSimulating, eventLimit, latencyHistory]);
 
   // Funciones de CRUD
   const handleDeleteService = async (idToRemove) => {

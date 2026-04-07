@@ -1,19 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LayoutDashboard } from 'lucide-react';
 
 import { useSentinelState } from './hooks/useSentinelState';
 import { useAuth } from './hooks/useAuth';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
-import { Dashboard } from './components/Dashboard';
-import { History } from './pages/History';
 import { AddTargetModal } from './components/AddTargetModal';
 import { EditTargetModal } from './components/EditTargetModal';
-import { HelpManual } from './components/HelpManual';
 import { AuthScreen } from './components/AuthScreen';
-import { Configuration } from './components/Configuration';
-import { Alerts } from './components/Alerts';
-import { Reports } from './components/Reports';
+import { MainContent } from './components/MainContent';
+import { buildAuthHeaders, getApiUrl } from './lib/api';
 
 export default function App() {
   const {
@@ -39,8 +34,7 @@ export default function App() {
     historyRefreshMs: 15000,
   });
 
-  const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-  const apiUrl = useMemo(() => (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`), [rawApiUrl]);
+  const apiUrl = getApiUrl();
 
   useEffect(() => {
     if (!token) return;
@@ -48,9 +42,7 @@ export default function App() {
     const loadConfig = async () => {
       try {
         const response = await fetch(`${apiUrl}/config`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: buildAuthHeaders(token),
         });
 
         if (!response.ok) return;
@@ -74,10 +66,7 @@ export default function App() {
     try {
       const response = await fetch(`${apiUrl}/config`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: buildAuthHeaders(token),
         body: JSON.stringify({
           pollIntervalMs: Number(newSettings.pollInterval),
           failureThreshold: Number(newSettings.failureThreshold),
@@ -261,47 +250,20 @@ export default function App() {
         />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-950 p-4 lg:p-6 custom-scrollbar">
-          {activeTab === 'dashboard' ? (
-            <Dashboard 
-              services={sortedServices}
-              hasTargetFilters={hasTargetFilters}
-              events={events}
-              isSimulating={isSimulating}
-              onEditService={setEditingService}
-              handleDeleteService={handleDeleteService}
-              setShowAddModal={setShowAddModal}
-            />
-          ) : activeTab === 'history' ? (
-            <History
-              services={sortedServices}
-              token={token}
-              apiUrl={apiUrl}
-              refreshIntervalMs={settings.historyRefreshMs}
-            />
-          ) : activeTab === 'reportes' ? (
-            <Reports services={sortedServices} events={events} />
-          ) : activeTab === 'alertas' ? (
-            <Alerts events={events} />
-          ) : activeTab === 'configuracion' ? (
-            <Configuration 
-              settings={settings}
-              onSave={handleSaveSettings}
-            />
-          ) : activeTab === 'ayuda' ? (
-            <HelpManual />
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-slate-800 rounded-2xl bg-slate-900/30 max-w-lg w-full m-auto">
-              <div className="w-16 h-16 mb-4 rounded-xl bg-slate-800/80 flex items-center justify-center shrink-0 border border-slate-700">
-                <LayoutDashboard className="w-8 h-8 text-slate-500" />
-              </div>
-              <h2 className="text-xl font-semibold text-slate-200 mb-2">
-                Módulo: <span className="capitalize text-emerald-400">{activeTab}</span>
-              </h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Este módulo se encuentra en construcción. Implementaremos lógica adicional en futuras iteraciones.
-              </p>
-            </div>
-          )}
+          <MainContent
+            activeTab={activeTab}
+            sortedServices={sortedServices}
+            hasTargetFilters={hasTargetFilters}
+            events={events}
+            isSimulating={isSimulating}
+            setEditingService={setEditingService}
+            handleDeleteService={handleDeleteService}
+            setShowAddModal={setShowAddModal}
+            token={token}
+            apiUrl={apiUrl}
+            settings={settings}
+            handleSaveSettings={handleSaveSettings}
+          />
         </main>
       </div>
     </div>

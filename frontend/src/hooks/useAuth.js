@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { buildAuthHeaders, getApiUrl } from '../lib/api';
 
 const TOKEN_KEY = 'netpulse_token';
 const USER_KEY = 'netpulse_user';
 
 export function useAuth() {
-  const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-  const API_URL = useMemo(() => (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`), [rawApiUrl]);
+  const API_URL = getApiUrl();
 
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState(() => {
@@ -28,9 +28,7 @@ export function useAuth() {
 
       try {
         const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: buildAuthHeaders(token),
         });
 
         if (!response.ok) {
@@ -56,7 +54,7 @@ export function useAuth() {
   const login = async ({ email, password }) => {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildAuthHeaders(token),
       body: JSON.stringify({ email, password }),
     });
 
@@ -74,7 +72,7 @@ export function useAuth() {
   const register = async ({ name, email, password }) => {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildAuthHeaders(token),
       body: JSON.stringify({ name, email, password }),
     });
 
