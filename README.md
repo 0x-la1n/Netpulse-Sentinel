@@ -68,17 +68,6 @@ Si deseas destruir los contenedores por completo, ejecuta:
 ```bash
 docker compose down
 ```
-
-## 🗺️ Hoja de Ruta (Roadmap)
-
-Para ver las próximas características y mejoras planificadas para NetPulse Sentinel, consulta nuestro archivo [ROADMAP.md](ROADMAP.md).
-
-Algunas de las tareas actuales incluyen:
-- 🔔 Filtros de búsqueda en Alertas.
-- 🛠️ Exportación de reportes de Servicios.
-- 📊 Edición de targets y feedback en Dashboard.
-- ⚙️ Separación del flujo de gestión de usuarios.
-
 ## 📚 Documentación
 
 - Arquitectura técnica y estado del proyecto: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
