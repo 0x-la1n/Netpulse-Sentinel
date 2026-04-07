@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import {
   AlertTriangle,
   BellRing,
@@ -11,9 +11,10 @@ import {
   ShieldAlert,
   XCircle,
 } from 'lucide-react';
-
-const TYPE_OPTIONS = ['ALL', 'CRITICAL', 'RECOVERY', 'INFO'];
-const TIME_OPTIONS = ['ALL', '15M', '1H', '24H', '7D'];
+import { absoluteTime, relativeTime } from '../lib/time';
+import { PageHeader } from './ui/PageHeader';
+import { KpiCard } from './ui/KpiCard';
+import { useAlertsData } from '../hooks/alerts/useAlertsData';
 
 function eventStyle(type) {
   if (type === 'CRITICAL') {
@@ -42,140 +43,40 @@ function eventStyle(type) {
   };
 }
 
-function relativeTime(timestamp) {
-  const date = new Date(timestamp);
-  const diff = Date.now() - date.getTime();
-
-  if (diff < 60 * 1000) return 'hace segundos';
-  if (diff < 60 * 60 * 1000) return `hace ${Math.floor(diff / (60 * 1000))} min`;
-  if (diff < 24 * 60 * 60 * 1000) return `hace ${Math.floor(diff / (60 * 60 * 1000))} h`;
-  return `hace ${Math.floor(diff / (24 * 60 * 60 * 1000))} d`;
-}
-
-function absoluteTime(timestamp) {
-  return new Date(timestamp).toLocaleString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
-function inTimeWindow(timestamp, windowKey) {
-  if (windowKey === 'ALL') return true;
-
-  const ageMs = Date.now() - new Date(timestamp).getTime();
-  if (windowKey === '15M') return ageMs <= 15 * 60 * 1000;
-  if (windowKey === '1H') return ageMs <= 60 * 60 * 1000;
-  if (windowKey === '24H') return ageMs <= 24 * 60 * 60 * 1000;
-  if (windowKey === '7D') return ageMs <= 7 * 24 * 60 * 60 * 1000;
-
-  return true;
-}
-
 export const Alerts = ({ events }) => {
-  const [query, setQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('ALL');
-  const [timeFilter, setTimeFilter] = useState('24H');
-  const [serviceFilter, setServiceFilter] = useState('ALL');
-  const [sortBy, setSortBy] = useState('newest');
-
-  const serviceOptions = useMemo(() => {
-    const set = new Set(events.map((evt) => evt.serviceName).filter(Boolean));
-    return ['ALL', ...Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))];
-  }, [events]);
-
-  const filteredEvents = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    const next = events.filter((evt) => {
-      if (!inTimeWindow(evt.timestamp, timeFilter)) return false;
-      if (typeFilter !== 'ALL' && evt.type !== typeFilter) return false;
-      if (serviceFilter !== 'ALL' && evt.serviceName !== serviceFilter) return false;
-
-      if (!normalizedQuery) return true;
-
-      const haystack = [
-        evt.serviceName,
-        evt.type,
-        evt.status,
-        evt.message,
-      ]
-        .map((value) => String(value || '').toLowerCase())
-        .join(' ');
-
-      return haystack.includes(normalizedQuery);
-    });
-
-    if (sortBy === 'oldest') {
-      next.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    } else if (sortBy === 'severity') {
-      const weight = { CRITICAL: 3, RECOVERY: 2, INFO: 1 };
-      next.sort((a, b) => {
-        const diff = (weight[b.type] || 0) - (weight[a.type] || 0);
-        if (diff !== 0) return diff;
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-      });
-    } else {
-      next.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    }
-
-    return next;
-  }, [events, query, typeFilter, timeFilter, serviceFilter, sortBy]);
-
-  const stats = useMemo(() => {
-    const critical = filteredEvents.filter((evt) => evt.type === 'CRITICAL').length;
-    const recovery = filteredEvents.filter((evt) => evt.type === 'RECOVERY').length;
-    const info = filteredEvents.filter((evt) => evt.type === 'INFO').length;
-
-    return {
-      total: filteredEvents.length,
-      critical,
-      recovery,
-      info,
-    };
-  }, [filteredEvents]);
+  const {
+    query,
+    setQuery,
+    typeFilter,
+    setTypeFilter,
+    timeFilter,
+    setTimeFilter,
+    serviceFilter,
+    setServiceFilter,
+    sortBy,
+    setSortBy,
+    serviceOptions,
+    filteredEvents,
+    stats,
+    TYPE_OPTIONS,
+    TIME_OPTIONS,
+  } = useAlertsData(events);
 
   return (
     <div className="w-full space-y-4 pb-5">
-      <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-4 md:p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-0.5 text-[11px] font-semibold text-emerald-300">
-              <BellRing className="h-3.5 w-3.5" />
-              Centro de Alertas
-            </div>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-100 md:text-2xl">Alertas y eventos de monitoreo</h2>
-            <p className="mt-1.5 max-w-3xl text-xs text-slate-400 md:text-sm">
-              Visualiza incidentes, recuperaciones y eventos informativos con búsqueda avanzada, filtros temporales y priorización por severidad.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-[11px] text-slate-400">
-            Ventana activa: <span className="font-semibold text-slate-100">{timeFilter}</span>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        icon={BellRing}
+        chipLabel="Centro de Alertas"
+        title="Alertas y eventos de monitoreo"
+        description="Visualiza incidentes, recuperaciones y eventos informativos con búsqueda avanzada, filtros temporales y priorización por severidad."
+        rightContent={<span>Ventana activa: <span className="font-semibold text-slate-100">{timeFilter}</span></span>}
+      />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Total</div>
-          <div className="mt-1 text-xl font-semibold text-slate-100">{stats.total}</div>
-        </div>
-        <div className="rounded-xl border border-rose-900/40 bg-rose-950/20 p-3">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-rose-300/70">Críticas</div>
-          <div className="mt-1 text-xl font-semibold text-rose-300">{stats.critical}</div>
-        </div>
-        <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-3">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-300/70">Recuperaciones</div>
-          <div className="mt-1 text-xl font-semibold text-emerald-300">{stats.recovery}</div>
-        </div>
-        <div className="rounded-xl border border-cyan-900/40 bg-cyan-950/20 p-3">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300/70">Info</div>
-          <div className="mt-1 text-xl font-semibold text-cyan-300">{stats.info}</div>
-        </div>
+        <KpiCard label="Total" value={stats.total} />
+        <KpiCard label="Críticas" value={stats.critical} tone="danger" />
+        <KpiCard label="Recuperaciones" value={stats.recovery} tone="success" />
+        <KpiCard label="Info" value={stats.info} tone="info" />
       </section>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900 p-3 md:p-4">
