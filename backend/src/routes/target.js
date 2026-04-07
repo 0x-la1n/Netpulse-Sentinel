@@ -1,6 +1,7 @@
 const express = require('express');
 const net = require('net');
 const targetsRepository = require('../repositories/targetsRepository');
+const settingsRepository = require('../repositories/settingsRepository');
 
 const router = express.Router();
 
@@ -89,15 +90,36 @@ function validateTargetByType(type, rawTarget, resolvedPort) {
   return { valid: false, error: 'type no soportado' };
 }
 
+function clampInt(value, min, max, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, Math.floor(parsed)));
+}
+
+async function resolveLatencyLimit(req) {
+  const fromQuery = req.query?.latencyLimit;
+  if (fromQuery != null) {
+    return clampInt(fromQuery, 5, 120, 15);
+  }
+
+  try {
+    const settings = await settingsRepository.getSettings();
+    return clampInt(settings?.latencyHistory, 5, 120, 15);
+  } catch {
+    return 15;
+  }
+}
+
 // ── GET /api/targets ───
 router.get('/', async (req, res) => {
   try {
+    const latencyLimit = await resolveLatencyLimit(req);
     const rows = await targetsRepository.getTargetsBaseRows();
 
     const targets = [];
 
     for (const row of rows) {
-      const latencyRows = await targetsRepository.getLatenciesByTargetId(row.id, 15);
+      const latencyRows = await targetsRepository.getLatenciesByTargetId(row.id, latencyLimit);
 
       const latencies = latencyRows
         .map((item) => (item.latency_ms == null ? 0 : item.latency_ms))

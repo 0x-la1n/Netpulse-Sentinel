@@ -1,6 +1,7 @@
 // Prueba la conexión a la base de datos al iniciar.
 
 const mysql = require('mysql2/promise');
+const { DEFAULT_OPERATOR_PERMISSIONS } = require('../lib/permissions');
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -98,12 +99,78 @@ async function ensureSchema() {
         name            VARCHAR(100) NOT NULL,
         email           VARCHAR(190) NOT NULL,
         password_hash   VARCHAR(255) NOT NULL,
+        role            ENUM('ADMIN','OPERATOR') NOT NULL DEFAULT 'OPERATOR',
+        permissions_json JSON DEFAULT NULL,
+        token_version   INT UNSIGNED NOT NULL DEFAULT 0,
         created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         UNIQUE KEY uk_users_email (email)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
     );
+
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS app_settings (
+        id                      TINYINT UNSIGNED NOT NULL,
+        poll_interval_ms        INT UNSIGNED NOT NULL DEFAULT 2000,
+        global_polling_interval_sec INT UNSIGNED DEFAULT NULL,
+        failure_threshold       TINYINT UNSIGNED NOT NULL DEFAULT 3,
+        event_limit             SMALLINT UNSIGNED NOT NULL DEFAULT 50,
+        latency_history         SMALLINT UNSIGNED NOT NULL DEFAULT 15,
+        history_refresh_ms      INT UNSIGNED NOT NULL DEFAULT 15000,
+        dense_mode              TINYINT(1) NOT NULL DEFAULT 0,
+        updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    );
+
+    await connection.query(
+      `INSERT IGNORE INTO app_settings
+        (id, global_polling_interval_sec, failure_threshold, event_limit, latency_history, history_refresh_ms)
+       VALUES (1, NULL, 3, 50, 15, 15000)`
+    );
+
+    if (!(await hasColumn(connection, 'app_settings', 'poll_interval_ms'))) {
+      await connection.query('ALTER TABLE app_settings ADD COLUMN poll_interval_ms INT UNSIGNED NOT NULL DEFAULT 2000 AFTER id');
+      await connection.query(
+        `UPDATE app_settings
+         SET poll_interval_ms = CASE
+           WHEN global_polling_interval_sec IS NULL THEN 2000
+           ELSE global_polling_interval_sec * 1000
+         END
+         WHERE poll_interval_ms IS NULL OR poll_interval_ms = 0`
+      );
+    }
+
+    if (!(await hasColumn(connection, 'app_settings', 'dense_mode'))) {
+      await connection.query('ALTER TABLE app_settings ADD COLUMN dense_mode TINYINT(1) NOT NULL DEFAULT 0 AFTER history_refresh_ms');
+    }
+
+    await connection.query('UPDATE app_settings SET dense_mode = 0 WHERE dense_mode IS NULL');
+
+    if (!(await hasColumn(connection, 'users', 'token_version'))) {
+      await connection.query('ALTER TABLE users ADD COLUMN token_version INT UNSIGNED NOT NULL DEFAULT 0 AFTER password_hash');
+    }
+
+    if (!(await hasColumn(connection, 'users', 'role'))) {
+      await connection.query("ALTER TABLE users ADD COLUMN role ENUM('ADMIN','OPERATOR') NOT NULL DEFAULT 'OPERATOR' AFTER password_hash");
+      await connection.query("UPDATE users SET role = 'ADMIN' WHERE role IS NULL OR role = ''");
+    }
+
+    if (!(await hasColumn(connection, 'users', 'permissions_json'))) {
+      await connection.query('ALTER TABLE users ADD COLUMN permissions_json JSON DEFAULT NULL AFTER role');
+    }
+
+    const [adminCountRows] = await connection.query("SELECT COUNT(*) AS count FROM users WHERE role = 'ADMIN'");
+    if (Number(adminCountRows?.[0]?.count || 0) === 0) {
+      await connection.query("UPDATE users SET role = 'ADMIN' ORDER BY id ASC LIMIT 1");
+    }
+
+    await connection.query(
+      'UPDATE users SET permissions_json = ? WHERE role = \'OPERATOR\' AND permissions_json IS NULL',
+      [JSON.stringify(DEFAULT_OPERATOR_PERMISSIONS)]
+    );
+    await connection.query("UPDATE users SET permissions_json = NULL WHERE role = 'ADMIN'");
 
     const hasTarget = await hasColumn(connection, 'targets', 'target');
     const hasUrl = await hasColumn(connection, 'targets', 'url');

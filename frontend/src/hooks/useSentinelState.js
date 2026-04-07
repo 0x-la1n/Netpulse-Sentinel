@@ -20,7 +20,8 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
 
   const refreshServices = async () => {
     try {
-      const response = await fetch(`${API_URL}/targets`, {
+      const safeLatencyHistory = Math.max(5, Number(latencyHistory) || 15);
+      const response = await fetch(`${API_URL}/targets?latencyLimit=${safeLatencyHistory}`, {
         headers: authHeaders,
       });
       handleUnauthorized(response);
@@ -53,7 +54,7 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
     if (!token) return;
     refreshServices();
     refreshEvents();
-  }, [API_URL, token]);
+  }, [API_URL, token, eventLimit, latencyHistory]);
 
   // Polling real contra backend
   useEffect(() => {
@@ -66,7 +67,7 @@ export function useSentinelState({ token, onUnauthorized, pollIntervalMs = 5000,
     }, safeInterval);
 
     return () => clearInterval(interval);
-  }, [API_URL, token, isSimulating, pollIntervalMs, eventLimit]);
+  }, [API_URL, token, isSimulating, pollIntervalMs, eventLimit, latencyHistory]);
 
   // Socket.io en tiempo real para estado y audit trail
   useEffect(() => {
