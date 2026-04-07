@@ -4,6 +4,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Line } from 'react-chartjs-2';
 import { PageHeader } from '../components/ui/PageHeader';
 import { KpiCard } from '../components/ui/KpiCard';
+import { ServiceLogo } from '../components/ui/ServiceLogo';
 import { useHistoryData } from '../hooks/history/useHistoryData';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
@@ -104,9 +105,13 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-medium text-slate-100">{service.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{service.type} · {service.target}</div>
+                    <div className="min-w-0 flex items-center gap-3">
+                      <ServiceLogo service={service} sizeClass="h-8 w-8" />
+
+                      <div className="min-w-0">
+                        <div className="font-medium text-slate-100 truncate">{service.name}</div>
+                        <div className="mt-1 text-xs text-slate-500 truncate">{service.type} · {service.target}</div>
+                      </div>
                     </div>
                     <div className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${service.status === 'UP' ? 'bg-emerald-500/10 text-emerald-300' : service.status === 'DOWN' ? 'bg-rose-500/10 text-rose-300' : 'bg-slate-500/10 text-slate-300'}`}>
                       {service.status}

@@ -128,6 +128,10 @@ export default function App() {
       let matchesFilter = true;
       if (targetFilter === 'up' || targetFilter === 'down' || targetFilter === 'paused') {
         matchesFilter = status === targetFilter;
+      } else if (targetFilter === 'critical') {
+        matchesFilter = String(service.priority || '').toUpperCase() === 'CRITICAL';
+      } else if (targetFilter === 'issues') {
+        matchesFilter = status === 'down' || status === 'paused';
       } else if (targetFilter === 'http' || targetFilter === 'ping' || targetFilter === 'port') {
         matchesFilter = type === targetFilter;
       }
@@ -240,12 +244,6 @@ export default function App() {
           isSimulating={isSimulating}
           setIsSimulating={setIsSimulating}
           setShowAddModal={setShowAddModal}
-          targetSearch={targetSearch}
-          setTargetSearch={setTargetSearch}
-          targetFilter={targetFilter}
-          setTargetFilter={setTargetFilter}
-          targetSort={targetSort}
-          setTargetSort={setTargetSort}
           user={user}
         />
 
@@ -263,6 +261,12 @@ export default function App() {
             apiUrl={apiUrl}
             settings={settings}
             handleSaveSettings={handleSaveSettings}
+            targetSearch={targetSearch}
+            setTargetSearch={setTargetSearch}
+            targetFilter={targetFilter}
+            setTargetFilter={setTargetFilter}
+            targetSort={targetSort}
+            setTargetSort={setTargetSort}
           />
         </main>
       </div>

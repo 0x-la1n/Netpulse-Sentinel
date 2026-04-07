@@ -20,6 +20,12 @@ export const MainContent = ({
   apiUrl,
   settings,
   handleSaveSettings,
+  targetSearch,
+  setTargetSearch,
+  targetFilter,
+  setTargetFilter,
+  targetSort,
+  setTargetSort,
 }) => {
   if (activeTab === 'dashboard') {
     return (
@@ -31,6 +37,12 @@ export const MainContent = ({
         onEditService={setEditingService}
         handleDeleteService={handleDeleteService}
         setShowAddModal={setShowAddModal}
+        targetSearch={targetSearch}
+        setTargetSearch={setTargetSearch}
+        targetFilter={targetFilter}
+        setTargetFilter={setTargetFilter}
+        targetSort={targetSort}
+        setTargetSort={setTargetSort}
       />
     );
   }
