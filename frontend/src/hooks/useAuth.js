@@ -95,11 +95,21 @@ export function useAuth() {
   };
 
   const updateSession = ({ token: nextToken, user: nextUser }) => {
-    if (!nextToken || !nextUser) return;
+    if (nextToken) {
+      localStorage.setItem(TOKEN_KEY, nextToken);
+      setToken(nextToken);
+    }
 
-    localStorage.setItem(TOKEN_KEY, nextToken);
+    if (nextUser) {
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      setUser(nextUser);
+    }
+  };
+
+  const updateUser = (nextUser) => {
+    if (!nextUser) return;
+
     localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-    setToken(nextToken);
     setUser(nextUser);
   };
 
@@ -112,5 +122,6 @@ export function useAuth() {
     register,
     logout,
     updateSession,
+    updateUser,
   };
 }

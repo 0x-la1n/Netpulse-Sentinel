@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   email           VARCHAR(190) NOT NULL,
   password_hash   VARCHAR(255) NOT NULL,
   role            ENUM('ADMIN','OPERATOR') NOT NULL DEFAULT 'OPERATOR',
+  theme           ENUM('DARK','LIGHT') NOT NULL DEFAULT 'DARK',
   permissions_json JSON DEFAULT NULL,
   token_version   INT UNSIGNED NOT NULL DEFAULT 0,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

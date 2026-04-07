@@ -11,6 +11,10 @@ import { MainContent } from './components/MainContent';
 import { buildAuthHeaders, getApiUrl } from './lib/api';
 import { hasPermission } from './lib/permissions';
 
+function getThemeFromUser(currentUser) {
+  return String(currentUser?.theme || '').toLowerCase() === 'light' ? 'light' : 'dark';
+}
+
 export default function App() {
   const {
     token,
@@ -21,6 +25,7 @@ export default function App() {
     register,
     logout,
     updateSession,
+    updateUser,
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -36,8 +41,46 @@ export default function App() {
     historyRefreshMs: 15000,
     denseMode: false,
   });
+  const [theme, setTheme] = useState('dark');
 
   const apiUrl = getApiUrl();
+
+  useEffect(() => {
+    if (!user) return;
+    setTheme(getThemeFromUser(user));
+  }, [user]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    root.style.colorScheme = theme;
+  }, [theme]);
+
+  const toggleTheme = async () => {
+    if (!token || !user) return;
+
+    const previousTheme = theme;
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+
+    try {
+      const response = await fetch(`${apiUrl}/auth/theme`, {
+        method: 'PUT',
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ theme: nextTheme }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.user) {
+        throw new Error(data?.error || 'No se pudo guardar el tema');
+      }
+
+      updateUser(data.user);
+    } catch (error) {
+      console.error('Error updating theme preference:', error);
+      setTheme(previousTheme);
+    }
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -273,6 +316,9 @@ export default function App() {
           setIsSimulating={setIsSimulating}
           setShowAddModal={setShowAddModal}
           user={user}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onLogout={logout}
         />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-950 p-4 lg:p-6 custom-scrollbar">

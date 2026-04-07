@@ -100,6 +100,7 @@ async function ensureSchema() {
         email           VARCHAR(190) NOT NULL,
         password_hash   VARCHAR(255) NOT NULL,
         role            ENUM('ADMIN','OPERATOR') NOT NULL DEFAULT 'OPERATOR',
+        theme           ENUM('DARK','LIGHT') NOT NULL DEFAULT 'DARK',
         permissions_json JSON DEFAULT NULL,
         token_version   INT UNSIGNED NOT NULL DEFAULT 0,
         created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -157,8 +158,14 @@ async function ensureSchema() {
       await connection.query("UPDATE users SET role = 'ADMIN' WHERE role IS NULL OR role = ''");
     }
 
+    if (!(await hasColumn(connection, 'users', 'theme'))) {
+      await connection.query("ALTER TABLE users ADD COLUMN theme ENUM('DARK','LIGHT') NOT NULL DEFAULT 'DARK' AFTER role");
+    }
+
+    await connection.query("UPDATE users SET theme = 'DARK' WHERE theme IS NULL OR theme = ''");
+
     if (!(await hasColumn(connection, 'users', 'permissions_json'))) {
-      await connection.query('ALTER TABLE users ADD COLUMN permissions_json JSON DEFAULT NULL AFTER role');
+      await connection.query('ALTER TABLE users ADD COLUMN permissions_json JSON DEFAULT NULL AFTER theme');
     }
 
     const [adminCountRows] = await connection.query("SELECT COUNT(*) AS count FROM users WHERE role = 'ADMIN'");

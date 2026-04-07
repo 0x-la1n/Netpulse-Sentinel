@@ -77,7 +77,13 @@ Algunas de las tareas actuales incluyen:
 - 🔔 Filtros de búsqueda en Alertas.
 - 🛠️ Exportación de reportes de Servicios.
 - 📊 Edición de targets y feedback en Dashboard.
-- ⚙️ Separación de gestión de usuarios y modo oscuro.
+- ⚙️ Separación del flujo de gestión de usuarios.
+
+## 📚 Documentación
+
+- Arquitectura técnica y estado del proyecto: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Hoja de ruta: [ROADMAP.md](ROADMAP.md)
+- Activos y entregables visuales: [assets/README.md](assets/README.md)
 
 ## 👥 Integrantes del Equipo
 

@@ -31,12 +31,14 @@ function signToken(user) {
 function buildUserPayload(row) {
   const role = String(row?.role || ROLES.OPERATOR).toUpperCase();
   const parsedPermissions = parsePermissions(row?.permissions_json);
+  const theme = String(row?.theme || 'DARK').toUpperCase() === 'LIGHT' ? 'light' : 'dark';
 
   return {
     id: row.id,
     name: row.name,
     email: row.email,
     role,
+    theme,
     permissions: permissionsForRole(role, parsedPermissions),
   };
 }
@@ -70,8 +72,8 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password_hash, role, permissions_json, token_version) VALUES (?, ?, ?, ?, ?, 0)',
-      [name, email, passwordHash, role, permissions ? JSON.stringify(permissions) : null]
+      'INSERT INTO users (name, email, password_hash, role, theme, permissions_json, token_version) VALUES (?, ?, ?, ?, ?, ?, 0)',
+      [name, email, passwordHash, role, 'DARK', permissions ? JSON.stringify(permissions) : null]
     );
 
     const user = {
@@ -79,6 +81,7 @@ router.post('/register', async (req, res) => {
       name,
       email,
       role,
+      theme: 'DARK',
       permissions_json: permissions ? JSON.stringify(permissions) : null,
       token_version: 0,
     };
@@ -104,7 +107,7 @@ router.post('/login', async (req, res) => {
     }
 
     const [[user]] = await pool.query(
-      'SELECT id, name, email, role, permissions_json, password_hash, token_version FROM users WHERE email = ? LIMIT 1',
+      'SELECT id, name, email, role, theme, permissions_json, password_hash, token_version FROM users WHERE email = ? LIMIT 1',
       [email]
     );
 
@@ -131,7 +134,7 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const [[user]] = await pool.query('SELECT id, name, email, role, permissions_json, created_at, token_version FROM users WHERE id = ? LIMIT 1', [req.user.id]);
+    const [[user]] = await pool.query('SELECT id, name, email, role, theme, permissions_json, created_at, token_version FROM users WHERE id = ? LIMIT 1', [req.user.id]);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -157,7 +160,7 @@ router.put('/password', authenticate, async (req, res) => {
     }
 
     const [[user]] = await pool.query(
-      'SELECT id, name, email, role, permissions_json, password_hash, token_version FROM users WHERE id = ? LIMIT 1',
+      'SELECT id, name, email, role, theme, permissions_json, password_hash, token_version FROM users WHERE id = ? LIMIT 1',
       [req.user.id]
     );
 
@@ -184,6 +187,7 @@ router.put('/password', authenticate, async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      theme: user.theme,
       permissions_json: user.permissions_json,
       token_version: nextTokenVersion,
     };
@@ -195,6 +199,35 @@ router.put('/password', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Error in /auth/password:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/theme', authenticate, async (req, res) => {
+  try {
+    const themeInput = String(req.body?.theme || '').trim().toLowerCase();
+    if (themeInput !== 'dark' && themeInput !== 'light') {
+      return res.status(400).json({ error: 'Theme invalido. Usa dark o light.' });
+    }
+
+    const persistedTheme = themeInput === 'light' ? 'LIGHT' : 'DARK';
+    await pool.query('UPDATE users SET theme = ? WHERE id = ?', [persistedTheme, req.user.id]);
+
+    const [[user]] = await pool.query(
+      'SELECT id, name, email, role, theme, permissions_json, created_at FROM users WHERE id = ? LIMIT 1',
+      [req.user.id]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json({
+      message: 'Tema actualizado correctamente.',
+      user: { ...buildUserPayload(user), created_at: user.created_at },
+    });
+  } catch (error) {
+    console.error('Error in /auth/theme:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

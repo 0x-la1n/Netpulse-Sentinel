@@ -1,15 +1,19 @@
-# Arquitectura Tecnica - NetPulse Sentinel
+# Arquitectura y Documentacion Tecnica - NetPulse Sentinel
 
-## 1. Proposito del sistema
+## 1. Proposito de este documento
+Este archivo centraliza la documentacion tecnica y funcional del proyecto.
+Sustituye al antiguo indice de docs para mantener una sola fuente de verdad sobre arquitectura, estado y lineamientos.
+
+## 2. Proposito del sistema
 NetPulse Sentinel es una plataforma de monitoreo de infraestructura orientada a administradores IT.
-Permite supervisar disponibilidad y latencia de servicios de red en tiempo real, con historial de eventos, estado actual y visualizacion en dashboard.
+Supervisa disponibilidad y latencia de servicios en tiempo real, con historial de eventos, estado actual y dashboard operativo.
 
-El sistema monitorea objetivos de tipo:
+Tipos de objetivos soportados:
 - HTTP/HTTPS
 - PING (ICMP)
 - PORT (TCP)
 
-## 2. Arquitectura general
+## 3. Arquitectura general
 La solucion sigue una arquitectura cliente-servidor con persistencia en base de datos y actualizaciones en tiempo real.
 
 - Frontend: React + Vite
@@ -17,226 +21,151 @@ La solucion sigue una arquitectura cliente-servidor con persistencia en base de 
 - Base de datos: MySQL 8
 - Orquestacion local: Docker Compose
 
-### Componentes principales
-1. UI de monitoreo (Frontend)
-- Renderiza grid de nodos, estados, latencia y uptime.
-- Muestra Audit Trail de eventos.
+### 3.1 Componentes principales
+1. Frontend de monitoreo
+- Renderiza grid de nodos, estados, latencia, uptime y sparklines.
+- Muestra Audit Trail de transiciones.
 - Permite CRUD de objetivos.
-- Permite configurar intervalo global de actualizacion visual.
+- Aplica configuracion visual y operativa persistida.
 
-2. API de negocio (Backend)
-- Expone endpoints REST para autenticacion, objetivos, estados, eventos y configuracion.
-- Ejecuta el motor de polling en segundo plano.
-- Emite actualizaciones por WebSocket.
+2. Backend/API
+- Expone endpoints REST para autenticacion, objetivos, estados, eventos, configuracion y usuarios.
+- Ejecuta motor de polling en segundo plano.
+- Emite actualizaciones en tiempo real por Socket.io.
 
 3. Motor de polling
 - Programa chequeos periodicos por objetivo.
-- Evalua estado UP/DOWN.
-- Calcula latencia por prueba.
+- Evalua estado UP/DOWN y latencia por prueba.
 - Actualiza estado actual y registra historial.
 
 4. Persistencia (MySQL)
 - Guarda objetivos monitorizados.
 - Guarda estado actual desnormalizado para lecturas rapidas.
-- Guarda historial de chequeos y transiciones.
-
-## 3. Modelo de datos
-El backend se apoya en tres tablas clave para monitoreo:
-
-### targets
-Define los objetivos a monitorear.
-Campos relevantes:
-- id
-- name
-- type (HTTP, PING, PORT)
-- host
-- port
-- interval_sec
-- active
-
-### current_status
-Mantiene el ultimo estado conocido por objetivo.
-Campos relevantes:
-- target_id
-- status (UP, DOWN, UNKNOWN)
-- latency_ms
-- failure_count
-- last_checked
-
-### status_log
-Historial de verificaciones con marca temporal inmutable.
-Campos relevantes:
-- id
-- target_id
-- status
-- latency_ms
-- checked_at
+- Guarda historial de chequeos/eventos.
+- Guarda configuracion global y preferencias de interfaz.
+- Guarda usuarios, roles y permisos.
 
 ## 4. Flujo de monitoreo
 1. El backend inicia y levanta el poller.
-2. El poller carga objetivos activos desde MySQL.
-3. Para cada objetivo ejecuta la verificacion segun tipo.
-4. Actualiza current_status.
-5. Inserta registro en status_log.
-6. Si hay cambio de estado, genera evento de transicion.
-7. Emite actualizaciones por Socket.io al frontend.
+2. El poller sincroniza objetivos activos desde MySQL.
+3. Cada target se ejecuta segun su tipo (HTTP, PING, PORT).
+4. Se actualiza `current_status`.
+5. Se inserta log en `status_log`.
+6. Si hubo transicion de estado, se emite evento de auditoria.
+7. El frontend se actualiza por Socket.io y por refresco REST de respaldo.
 
-### 4.1 Funcionamiento interno del motor de polling
-El motor de polling ejecuta un ciclo continuo y se comporta como un scheduler dinamico.
-
-#### a) Inicializacion
-- Al arrancar el backend, se invoca startPoller.
-- El motor crea un estado interno en memoria con:
-	- Lista de timers activos por target.
-	- Referencia al servidor Socket.io.
-	- Configuracion global opcional de intervalo.
-	- Estado auxiliar para simuladores de demo.
-
-#### b) Sincronizacion de schedules
-- Cada 15 segundos el poller consulta objetivos activos en la base de datos.
-- Compara lo recuperado con los timers actuales:
-	- Si un target nuevo aparece, crea timer.
-	- Si un target se desactiva, elimina timer.
-	- Si cambia host, tipo, puerto o intervalo, reprogama timer.
-	- Si no hay cambios, conserva el timer para evitar reinicios innecesarios.
-
-#### c) Regla de intervalo efectiva
-Para calcular cada cuanto se sondea un objetivo, se aplica este orden:
-1. Si existe intervalo global runtime, ese valor domina.
-2. Si no existe, usa interval_sec del target.
-
-Esto permite pruebas de demo con un ritmo uniforme sin perder la configuracion por objetivo.
-
-#### d) Ejecucion por target
-Cada timer invoca pollTarget(target) y el ciclo hace:
-1. Evalua conectividad segun tipo (HTTP, PING, PORT).
-2. Deriva nextStatus (UP o DOWN).
-3. Lee estado previo en current_status.
-4. Calcula failure_count consecutivo.
-5. Actualiza current_status con status, latency_ms, failure_count y last_checked.
-6. Inserta una fila en status_log con checked_at inmutable.
-7. Si hubo transicion de estado (ej. UP -> DOWN), emite status:event.
-8. Siempre emite status:update para refresco en vivo del grid.
-
-#### e) Persistencia y audit trail
-- status_log almacena cada verificacion, lo cual mantiene sparklines y latencias vivas.
-- El Audit Trail de frontend consume eventos de transicion, no cada chequeo, para evitar ruido visual.
+### 4.1 Funcionamiento interno del poller
+- Mantiene timers activos por target.
+- Reprograma timers cuando cambian host, tipo, puerto o intervalo.
+- Respeta `pollIntervalMs` global cuando aplica; en ausencia, usa intervalo del target.
+- Emite:
+  - `status:update` para refresco de tarjetas.
+  - `status:event` para transiciones (CRITICAL/RECOVERY).
 
 ### 4.2 Criterio de estado por protocolo
-#### HTTP
-- Ejecuta GET con timeout.
-- UP: codigo 2xx.
-- DOWN: timeout, error de red o codigo fuera de 2xx.
+HTTP:
+- UP: respuesta 2xx dentro de timeout.
+- DOWN: timeout, error de red o respuesta fuera de 2xx.
 
-#### PING
-- Ejecuta probe ICMP.
-- UP: host alive.
+PING:
+- UP: host responde.
 - DOWN: sin respuesta.
 
-#### PORT
-- Intenta conexion TCP al host:puerto.
-- UP: connect exitoso.
-- DOWN: timeout o error de socket.
+PORT:
+- UP: conexion TCP exitosa.
+- DOWN: timeout/error de socket.
 
-### 4.3 Emision en tiempo real
-El motor usa dos eventos por Socket.io:
-- status:update: estado instantaneo de tarjeta (status, retries, latency, checkedAt).
-- status:event: evento de transicion para audit trail (CRITICAL/RECOVERY).
+## 5. Modelo de datos
+Tablas clave:
 
-Con esto el frontend refleja cambios sin esperar al siguiente refresco REST.
+### 5.1 Monitoreo
+- `targets`: definicion del objetivo (name, type, host, port, interval_sec, active).
+- `current_status`: estado actual por target (status, latency_ms, failure_count, last_checked).
+- `status_log`: historial inmutable por verificacion (status, latency_ms, checked_at).
 
-### 4.4 Simuladores para demostracion
-El motor incluye reglas de simulacion por host para pruebas controladas:
-- sim.inestable.local: alterna UP/DOWN en cada ciclo.
-- sim.latencia-alta.local: siempre UP con latencia alta variable.
+### 5.2 Configuracion
+- `app_settings`: configuracion global persistida.
+- Campos relevantes: `poll_interval_ms`, `global_polling_interval_sec`, `failure_threshold`, `event_limit`, `latency_history`, `history_refresh_ms`, `dense_mode`.
 
-Estas reglas solo aplican a targets HTTP de demo y ayudan a validar:
-- Transiciones de estado.
-- Colores por umbral de latencia.
-- Comportamiento del audit trail.
+### 5.3 Seguridad
+- `users`: autenticacion y autorizacion.
+- Campos relevantes: `email`, `password_hash`, `role` (ADMIN/OPERATOR), `theme` (DARK/LIGHT), `permissions_json`, `token_version`.
 
-## 5. Protocolo de verificaciones
-### HTTP
-- Se realiza GET con timeout.
-- UP: status 2xx
-- DOWN: timeout, error de red o status fuera de 2xx
+## 6. Seguridad y control de acceso
+- Autenticacion con JWT.
+- Invalidez de sesiones con `token_version`.
+- RBAC activo:
+  - ADMIN: acceso total.
+  - OPERATOR: permisos granulares configurables por admin.
+- Endpoints sensibles protegidos por middleware de autenticacion/permisos.
 
-### PING
-- Se realiza probe ICMP.
-- UP: respuesta viva
-- DOWN: sin respuesta
+## 7. API principal
+Autenticacion:
+- POST `/api/auth/register`
+- POST `/api/auth/login`
+- GET `/api/auth/me`
+- PUT `/api/auth/theme`
 
-### PORT
-- Se abre socket TCP al host:puerto.
-- UP: conexion exitosa
-- DOWN: timeout o error de conexion
+Objetivos:
+- GET `/api/targets`
+- GET `/api/targets/:id`
+- POST `/api/targets`
+- PUT `/api/targets/:id`
+- DELETE `/api/targets/:id`
 
-## 6. Tiempo real y sincronizacion UI
-El frontend combina dos mecanismos:
+Estados y eventos:
+- GET `/api/status`
+- GET `/api/status/:id`
+- GET `/api/events`
+- GET `/api/events/:targetId`
+- GET `/api/events/:targetId/latency`
 
-1. WebSocket (principal)
-- Evento status:update para actualizar tarjetas en vivo.
-- Evento status:event para insertar eventos en audit trail.
+Configuracion:
+- GET `/api/config`
+- PUT `/api/config`
 
-2. Polling REST (respaldo)
-- Refresca objetivos y eventos por intervalo global configurable.
-- Cubre reconexiones o desfases de socket.
+Usuarios y roles (admin):
+- GET `/api/users`
+- PUT `/api/users/:id/permissions`
 
-## 7. Configuracion global
-Existe un endpoint de configuracion para ajustar intervalo global de polling visual:
-- GET /api/config
-- PUT /api/config
+## 8. Estado por fases
+### Fase 1 - Logica de sondeo y persistencia (Cumplida)
+- Motor de polling para HTTP, PING y PORT en segundo plano.
+- CRUD de objetivos con validacion por tipo.
+- Sistema de estados UP/DOWN.
+- Registro de eventos y verificaciones en base de datos.
 
-Al guardar configuracion:
-- Se actualiza el intervalo global.
-- El poller re-sincroniza schedules.
-- El frontend refleja el cambio con feedback de guardado.
+### Fase 2 - Recomendado
+- [x] Persistir configuracion global en tabla dedicada.
+- [ ] Alertas externas (correo, Slack o webhooks).
+- [ ] Pruebas automatizadas de backend y frontend.
 
-## 8. Endpoints principales
-### Autenticacion
-- POST /api/auth/register
-- POST /api/auth/login
-- GET /api/auth/me
+### Fase 3 - Recomendado
+- [x] Multiusuario con roles (ADMIN/OPERATOR + permisos por operador).
+- [ ] Dashboards avanzados e indicadores historicos.
+- [ ] Integraciones con herramientas de observabilidad.
 
-### Objetivos
-- GET /api/targets
-- GET /api/targets/:id
-- POST /api/targets
-- PUT /api/targets/:id
-- DELETE /api/targets/:id
+## 9. Guia rapida para revision
+1. Revisar contexto general en [../README.md](../README.md).
+2. Revisar arquitectura y estado actual en este documento.
+3. Levantar entorno con Docker Compose.
+4. Probar endpoints criticos del backend.
+5. Verificar dashboard en tiempo real y audit trail.
+6. Probar simuladores de comportamiento en nodos.
 
-### Estados y eventos
-- GET /api/status
-- GET /api/status/:id
-- GET /api/events
-- GET /api/events/:targetId
-- GET /api/events/:targetId/latency
+## 10. Limitaciones conocidas
+- No existen aun alertas externas nativas (correo/Slack/webhook).
+- Falta cobertura automatizada de tests en frontend y backend.
 
-### Configuracion
-- GET /api/config
-- PUT /api/config
+## 11. Convenciones de documentacion
+- Idioma oficial: Espanol tecnico claro.
+- Cambios de arquitectura se documentan en este archivo.
+- Cambios de instalacion/ejecucion se documentan en [../README.md](../README.md).
+- Material visual y entregables se indexan en [../assets/README.md](../assets/README.md).
 
-## 9. Simuladores para demostracion
-Se incluyeron objetivos demo para pruebas visuales en dashboard:
-- Simulador Inestable: alterna entre UP y DOWN.
-- Simulador Latencia Alta: mantiene UP con latencia elevada.
-
-Estos escenarios ayudan a validar:
-- Cambio de color por umbral de latencia.
-- Evolucion de sparklines.
-- Registro de eventos en audit trail.
-
-## 10. Seguridad y operacion
-- Endpoints de negocio protegidos con JWT.
-- Helmet y CORS habilitados en backend.
-- Logs HTTP con morgan.
-- Despliegue local estandarizado con Docker Compose.
-
-## 11. Riesgos actuales y siguientes pasos
-Riesgos actuales:
-- Parte de la configuracion global se mantiene en runtime (si reinicia, puede volver a default si no se persiste en DB).
-
-Siguientes pasos sugeridos:
-1. Persistir configuracion global en tabla dedicada (app_config).
-2. Agregar pruebas automatizadas para poller y rutas criticas.
-3. Incorporar canales de alerta externa (correo, Slack o webhook).
+## 12. Checklist de actualizacion antes de entregar
+- [ ] README principal actualizado.
+- [ ] Arquitectura alineada con implementacion actual.
+- [ ] Endpoints nuevos documentados.
+- [ ] Riesgos y pendientes identificados.
+- [ ] Evidencias agregadas en assets.
