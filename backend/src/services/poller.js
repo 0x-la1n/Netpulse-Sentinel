@@ -1,7 +1,7 @@
 const net = require('net');
 const ping = require('ping');
 const axios = require('axios');
-const { pool } = require('../db/connection');
+const pollerRepository = require('../repositories/pollerRepository');
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const MIN_INTERVAL_SEC = 10;
@@ -242,29 +242,18 @@ async function pollTarget(target, io) {
     const result = await evaluateTarget(target);
     const rawStatus = result.up ? 'UP' : 'DOWN';
 
-    const [currentRows] = await pool.query(
-      'SELECT status, failure_count FROM current_status WHERE target_id = ? LIMIT 1',
-      [target.id]
-    );
+    const currentRow = await pollerRepository.getCurrentTargetState(target.id);
 
-    const previousStatus = currentRows[0]?.status || 'UNKNOWN';
-    const previousFailures = Number(currentRows[0]?.failure_count || 0);
+    const previousStatus = currentRow?.status || 'UNKNOWN';
+    const previousFailures = Number(currentRow?.failure_count || 0);
     const nextFailureCount = rawStatus === 'DOWN' ? previousFailures + 1 : 0;
     const nextStatus = rawStatus === 'DOWN'
       ? (nextFailureCount >= pollerState.failureThreshold ? 'DOWN' : previousStatus === 'UNKNOWN' ? 'UNKNOWN' : 'UP')
       : 'UP';
 
-    await pool.query(
-      `UPDATE current_status
-       SET status = ?, latency_ms = ?, failure_count = ?, last_checked = UTC_TIMESTAMP()
-       WHERE target_id = ?`,
-      [nextStatus, result.latencyMs, nextFailureCount, target.id]
-    );
+    await pollerRepository.updateCurrentStatus(target.id, nextStatus, result.latencyMs, nextFailureCount);
 
-    await pool.query(
-      'INSERT INTO status_log (target_id, status, latency_ms, checked_at) VALUES (?, ?, ?, UTC_TIMESTAMP())',
-      [target.id, nextStatus, result.latencyMs]
-    );
+    await pollerRepository.insertStatusLog(target.id, nextStatus, result.latencyMs);
 
     if (previousStatus !== nextStatus) {
       const eventPayload = {
@@ -326,11 +315,7 @@ function scheduleTarget(target, io) {
 }
 
 async function syncSchedules(io) {
-  const [targets] = await pool.query(
-    `SELECT id, name, type, host, port, interval_sec
-     FROM targets
-     WHERE active = 1`
-  );
+  const targets = await pollerRepository.getActiveTargetsForPolling();
 
   const activeIds = new Set(targets.map((target) => target.id));
 

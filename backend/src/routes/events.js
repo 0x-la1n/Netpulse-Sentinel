@@ -1,5 +1,5 @@
 const express = require('express');
-const { pool } = require('../db/connection');
+const eventsRepository = require('../repositories/eventsRepository');
 
 const router = express.Router();
 
@@ -8,28 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
 
-    const [rows] = await pool.query(
-      `SELECT id, target_id, service_name, status, latency_ms, checked_at
-       FROM (
-         SELECT
-           sl.id,
-           sl.target_id,
-           t.name AS service_name,
-           sl.status,
-           sl.latency_ms,
-           sl.checked_at,
-           LAG(sl.status) OVER (
-             PARTITION BY sl.target_id
-             ORDER BY sl.checked_at, sl.id
-           ) AS previous_status
-         FROM status_log sl
-         INNER JOIN targets t ON t.id = sl.target_id
-       ) transitions
-       WHERE previous_status IS NULL OR previous_status <> status
-       ORDER BY checked_at DESC, id DESC
-       LIMIT ?`,
-      [limit]
-    );
+    const rows = await eventsRepository.getRecentTransitionEvents(limit);
 
     const payload = rows.map((row) => ({
       id: row.id,
@@ -59,14 +38,7 @@ router.get('/:targetId', async (req, res) => {
     const { targetId } = req.params;
     const limit = Math.min(Number(req.query.limit) || 100, 500);
 
-    const [rows] = await pool.query(
-      `SELECT id, target_id, status, latency_ms, checked_at
-      FROM status_log
-      WHERE target_id = ?
-      ORDER BY checked_at DESC
-      LIMIT ?`,
-      [targetId, limit]
-    );
+    const rows = await eventsRepository.getTargetEvents(targetId, limit);
 
     res.json(rows);
   } catch (error) {
@@ -84,14 +56,7 @@ router.get('/:targetId/latency', async (req, res) => {
       ? Math.min(rawBucketMinutes, 60)
       : 10;
 
-    const [rows] = await pool.query(
-      `SELECT checked_at, latency_ms
-      FROM status_log
-      WHERE target_id = ?
-        AND checked_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR)
-      ORDER BY checked_at ASC`,
-      [targetId]
-    );
+    const rows = await eventsRepository.getLatencyRowsLast24h(targetId);
 
     if (rows.length === 0) {
       return res.json([]);

@@ -1,26 +1,12 @@
 const express = require('express');
-const { pool } = require('../db/connection');
+const statusRepository = require('../repositories/statusRepository');
 
 const router = express.Router();
 
 // ── GET /api/status ──────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT
-        t.id AS target_id,
-        t.name,
-        t.type,
-        t.host,
-        t.port,
-        COALESCE(cs.status, 'UNKNOWN') AS status,
-        cs.latency_ms,
-        cs.failure_count,
-        cs.last_checked
-      FROM targets t
-      LEFT JOIN current_status cs ON cs.target_id = t.id
-      ORDER BY t.id DESC`
-    );
+    const rows = await statusRepository.getStatusList();
 
     res.json(rows);
   } catch (error) {
@@ -34,35 +20,13 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [[current]] = await pool.query(
-      `SELECT
-        t.id AS target_id,
-        t.name,
-        t.type,
-        t.host,
-        t.port,
-        COALESCE(cs.status, 'UNKNOWN') AS status,
-        cs.latency_ms,
-        cs.failure_count,
-        cs.last_checked
-      FROM targets t
-      LEFT JOIN current_status cs ON cs.target_id = t.id
-      WHERE t.id = ?`,
-      [id]
-    );
+    const current = await statusRepository.getCurrentStatusByTargetId(id);
 
     if (!current) {
       return res.status(404).json({ error: 'Target not found' });
     }
 
-    const [[uptimeRow]] = await pool.query(
-      `SELECT
-        ROUND(SUM(status = 'UP') * 100 / COUNT(*), 2) AS uptime,
-        COUNT(*) AS total_checks
-      FROM status_log
-      WHERE target_id = ?`,
-      [id]
-    );
+    const uptimeRow = await statusRepository.getTargetUptime(id);
 
     res.json({
       ...current,
