@@ -74,7 +74,6 @@ export const History = ({ services, token, apiUrl, refreshIntervalMs = 15000 }) 
         icon={BarChart3}
         chipLabel="Centro de Historial"
         title="Historial de latencia"
-        description={`Gráfica de las últimas 24 horas por objetivo, agregada en bloques de ${bucketMinutes} minutos para mantener el panel fluido.`}
         rightContent={<span className="inline-flex items-center gap-2"><Server className="h-4 w-4 text-slate-400" />Servicio activo: <span className="font-semibold text-slate-100">{selectedService?.name || 'Sin servicios'}</span></span>}
       />
 

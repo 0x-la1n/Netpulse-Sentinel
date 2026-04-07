@@ -20,6 +20,7 @@ export const Dashboard = ({
   hasTargetFilters,
   events,
   isSimulating,
+  denseMode = false,
   onEditService,
   handleDeleteService,
   setShowAddModal,
@@ -185,7 +186,7 @@ export const Dashboard = ({
               </span>
             </div>
           </div>
-          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-all duration-300 ${
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 ${denseMode ? 'xl:grid-cols-4 2xl:grid-cols-5 gap-3' : 'xl:grid-cols-3 gap-4'} transition-all duration-300 ${
             isGlobalPaused ? 'opacity-55 grayscale-[0.6]' : ''
           }`}>
             {services.map(service => {
@@ -201,7 +202,7 @@ export const Dashboard = ({
                   : 'text-rose-400';
               
               return (
-                <div key={service.id} className={`bg-slate-900 border rounded-xl p-4 flex flex-col relative overflow-hidden transition-all duration-300 ${
+                <div key={service.id} className={`bg-slate-900 border rounded-xl ${denseMode ? 'p-3' : 'p-4'} flex flex-col relative overflow-hidden transition-all duration-300 ${
                   isGlobalPaused
                     ? 'border-slate-700/60 bg-slate-900/70'
                     : isPaused
@@ -210,55 +211,58 @@ export const Dashboard = ({
                       ? 'border-slate-800 hover:border-slate-700'
                       : 'border-rose-900/50 bg-rose-950/20'
                 }`}>
-                  <div className="flex justify-between items-start mb-3 gap-3">
-                    <div className="min-w-0 pr-2 flex items-start gap-3">
-                      <ServiceLogo service={service} sizeClass="h-8 w-8" />
+                  <div className={`flex justify-between items-start ${denseMode ? 'mb-2.5 gap-2' : 'mb-3 gap-3'}`}>
+                    <div className="min-w-0 pr-2 flex-1 flex items-start gap-3">
+                      <ServiceLogo service={service} sizeClass={denseMode ? 'h-7 w-7' : 'h-8 w-8'} />
 
-                      <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-slate-100 truncate max-w-[150px]">{service.name}</h4>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${priorityClass(service.priority)}`}>
-                          {priorityLabel(service.priority)}
-                        </span>
-                        <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
-                          isPaused
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            : isUp
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse'
-                        }`}>
-                          {isPaused ? <Clock className="w-3 h-3" /> : (isUp ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />)}
-                          {service.status}
-                        </span>
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`font-semibold text-slate-100 truncate ${denseMode ? 'text-sm' : ''}`}>{service.name}</h4>
+
+                        <p className="mt-1 text-xs text-slate-400 flex items-center gap-1.5 w-full min-w-0">
+                          <span className="shrink-0 px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700">{service.type}</span>
+                          <span className="truncate">{service.target}</span>
+                        </p>
+
+                        <div className={`${denseMode ? 'mt-1.5' : 'mt-2'} flex items-center gap-1.5`}>
+                          <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${priorityClass(service.priority)}`}>
+                            {priorityLabel(service.priority)}
+                          </span>
+
+                          <span className={`shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
+                            isPaused
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : isUp
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse'
+                          }`}>
+                            {isPaused ? <Clock className="w-3 h-3" /> : (isUp ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />)}
+                            {service.status}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-400 flex items-center gap-1.5 w-full">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700">{service.type}</span>
-                        <span className="truncate">{service.target}</span>
-                      </p>
-                    </div>
                     </div>
                     
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => onEditService(service)}
-                        className="text-slate-500 hover:text-amber-300 hover:bg-amber-400/10 p-1.5 rounded-md transition-colors"
+                        className={`text-slate-500 hover:text-amber-300 hover:bg-amber-400/10 ${denseMode ? 'p-1' : 'p-1.5'} rounded-md transition-colors`}
                         title="Editar servicio"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className={denseMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                       </button>
 
                       <button 
                         onClick={() => confirmDeleteService(service)}
-                        className="text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 p-1.5 rounded-md transition-colors"
+                        className={`text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 ${denseMode ? 'p-1' : 'p-1.5'} rounded-md transition-colors`}
                         title="Eliminar servicio"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className={denseMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                       </button>
                     </div>
                   </div>
 
                   {/* Sparkline & Stats */}
-                  <div className="mt-auto pt-3 flex flex-col gap-2">
+                  <div className={`mt-auto ${denseMode ? 'pt-2 gap-1.5' : 'pt-3 gap-2'} flex flex-col`}>
                     <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
                       <span className={`flex items-center gap-1 font-mono ${latencyClass}`}>
                         <Clock className="w-3.5 h-3.5" /> 
@@ -267,7 +271,7 @@ export const Dashboard = ({
                       <span className="font-medium">{service.uptime.toFixed(2)}% SLA</span>
                     </div>
 
-                    <div className="px-1 relative h-10 w-full">
+                    <div className={`px-1 relative ${denseMode ? 'h-8' : 'h-10'} w-full`}>
                       <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none py-0.5">
                         <div className="border-t border-slate-500 w-full" />
                         <div className="border-t border-slate-500 w-full" />

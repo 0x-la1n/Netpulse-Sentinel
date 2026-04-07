@@ -68,7 +68,6 @@ export const Alerts = ({ events }) => {
         icon={BellRing}
         chipLabel="Centro de Alertas"
         title="Alertas y eventos de monitoreo"
-        description="Visualiza incidentes, recuperaciones y eventos informativos con búsqueda avanzada, filtros temporales y priorización por severidad."
         rightContent={<span>Ventana activa: <span className="font-semibold text-slate-100">{timeFilter}</span></span>}
       />
 

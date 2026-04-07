@@ -53,7 +53,6 @@ export const Reports = ({ services, events }) => {
         icon={FileText}
         chipLabel="Centro de Reportes"
         title="Reportes operativos y personalizados"
-        description="Consulta resúmenes, incidencias críticas y métricas de rendimiento usando datos reales del tablero. Exporta el reporte actual a CSV o PDF."
         rightContent={<span>Vista activa: <span className="font-semibold text-slate-100">{REPORT_PRESETS.find((option) => option.value === preset)?.label}</span></span>}
       />
 
