@@ -94,6 +94,15 @@ export function useAuth() {
     setUser(null);
   };
 
+  const updateSession = ({ token: nextToken, user: nextUser }) => {
+    if (!nextToken || !nextUser) return;
+
+    localStorage.setItem(TOKEN_KEY, nextToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    setToken(nextToken);
+    setUser(nextUser);
+  };
+
   return {
     token,
     user,
@@ -102,5 +111,6 @@ export function useAuth() {
     login,
     register,
     logout,
+    updateSession,
   };
 }

@@ -9,6 +9,7 @@ import { EditTargetModal } from './components/EditTargetModal';
 import { AuthScreen } from './components/AuthScreen';
 import { MainContent } from './components/MainContent';
 import { buildAuthHeaders, getApiUrl } from './lib/api';
+import { hasPermission } from './lib/permissions';
 
 export default function App() {
   const {
@@ -19,6 +20,7 @@ export default function App() {
     login,
     register,
     logout,
+    updateSession,
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -32,6 +34,7 @@ export default function App() {
     eventLimit: 50,
     latencyHistory: 15,
     historyRefreshMs: 15000,
+    denseMode: false,
   });
 
   const apiUrl = getApiUrl();
@@ -49,8 +52,12 @@ export default function App() {
         const data = await response.json();
         setSettings((prev) => ({
           ...prev,
-          pollInterval: Number(data?.pollIntervalMs || prev.pollInterval),
-          failureThreshold: Number(data?.failureThreshold || prev.failureThreshold),
+          pollInterval: Number(data?.pollIntervalMs ?? prev.pollInterval),
+          failureThreshold: Number(data?.failureThreshold ?? prev.failureThreshold),
+          eventLimit: Number(data?.eventLimit ?? prev.eventLimit),
+          latencyHistory: Number(data?.latencyHistory ?? prev.latencyHistory),
+          historyRefreshMs: Number(data?.historyRefreshMs ?? prev.historyRefreshMs),
+          denseMode: Boolean(data?.denseMode ?? prev.denseMode),
         }));
       } catch (error) {
         console.error('Error loading config:', error);
@@ -59,6 +66,14 @@ export default function App() {
 
     loadConfig();
   }, [apiUrl, token]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (activeTab === 'configuracion' && !hasPermission(user, 'configuration.access')) {
+      setActiveTab('dashboard');
+    }
+  }, [activeTab, user]);
 
   const handleSaveSettings = async (newSettings) => {
     if (!token) return false;
@@ -70,6 +85,10 @@ export default function App() {
         body: JSON.stringify({
           pollIntervalMs: Number(newSettings.pollInterval),
           failureThreshold: Number(newSettings.failureThreshold),
+          eventLimit: Number(newSettings.eventLimit),
+          latencyHistory: Number(newSettings.latencyHistory),
+          historyRefreshMs: Number(newSettings.historyRefreshMs),
+          denseMode: Boolean(newSettings.denseMode),
         }),
       });
 
@@ -78,12 +97,20 @@ export default function App() {
       }
 
       const data = await response.json();
-      const pollInterval = Number(data?.pollIntervalMs || newSettings.pollInterval);
-      const failureThreshold = Number(data?.failureThreshold || newSettings.failureThreshold);
+      const pollInterval = Number(data?.pollIntervalMs ?? newSettings.pollInterval);
+      const failureThreshold = Number(data?.failureThreshold ?? newSettings.failureThreshold);
+      const eventLimit = Number(data?.eventLimit ?? newSettings.eventLimit);
+      const latencyHistory = Number(data?.latencyHistory ?? newSettings.latencyHistory);
+      const historyRefreshMs = Number(data?.historyRefreshMs ?? newSettings.historyRefreshMs);
+      const denseMode = Boolean(data?.denseMode ?? newSettings.denseMode);
       setSettings({
         ...newSettings,
         pollInterval,
         failureThreshold,
+        eventLimit,
+        latencyHistory,
+        historyRefreshMs,
+        denseMode,
       });
       return true;
     } catch (error) {
@@ -235,6 +262,7 @@ export default function App() {
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         onLogout={logout}
+        user={user}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -261,6 +289,8 @@ export default function App() {
             apiUrl={apiUrl}
             settings={settings}
             handleSaveSettings={handleSaveSettings}
+            updateSession={updateSession}
+            user={user}
             targetSearch={targetSearch}
             setTargetSearch={setTargetSearch}
             targetFilter={targetFilter}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, BellRing, Settings, CircleHelp, LogOut, X, BarChart3, Server, FileText } from 'lucide-react';
+import { hasPermission } from '../lib/permissions';
 
 export const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,7 +11,15 @@ export const navItems = [
   { id: 'ayuda', label: 'Ayuda', icon: CircleHelp },
 ];
 
-export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, onLogout }) => {
+export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen, onLogout, user }) => {
+  const visibleItems = navItems.filter((item) => {
+    if (item.id === 'configuracion') {
+      return hasPermission(user, 'configuration.access');
+    }
+
+    return true;
+  });
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -47,7 +56,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobile
 
         {/* Navigation Links */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             

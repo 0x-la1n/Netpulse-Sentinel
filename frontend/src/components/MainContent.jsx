@@ -20,6 +20,8 @@ export const MainContent = ({
   apiUrl,
   settings,
   handleSaveSettings,
+  updateSession,
+  user,
   targetSearch,
   setTargetSearch,
   targetFilter,
@@ -43,6 +45,7 @@ export const MainContent = ({
         setTargetFilter={setTargetFilter}
         targetSort={targetSort}
         setTargetSort={setTargetSort}
+        denseMode={Boolean(settings?.denseMode)}
       />
     );
   }
@@ -67,7 +70,7 @@ export const MainContent = ({
   }
 
   if (activeTab === 'configuracion') {
-    return <Configuration settings={settings} onSave={handleSaveSettings} />;
+    return <Configuration settings={settings} onSave={handleSaveSettings} token={token} apiUrl={apiUrl} updateSession={updateSession} user={user} />;
   }
 
   if (activeTab === 'ayuda') {
